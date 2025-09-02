@@ -1,13 +1,27 @@
 "use client";
 
+import React from "react";
 import { signIn, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
-export function SignInButton() {
+export const SignInButton = React.memo(function SignInButton() {
   const { data: session, isPending } = useSession();
 
+  const handleSignIn = React.useCallback(async () => {
+    try {
+      console.log('Attempting to sign in with Google...');
+      await signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+      });
+    } catch (error) {
+      console.error('Sign-in error:', error);
+      alert('שגיאה בהתחברות: ' + (error instanceof Error ? error.message : 'שגיאה לא מוכרת'));
+    }
+  }, []);
+
   if (isPending) {
-    return <Button disabled>Loading...</Button>;
+    return <Button disabled aria-label="טוען...">טוען...</Button>;
   }
 
   if (session) {
@@ -16,14 +30,10 @@ export function SignInButton() {
 
   return (
     <Button
-      onClick={async () => {
-        await signIn.social({
-          provider: "google",
-          callbackURL: "/dashboard",
-        });
-      }}
+      onClick={handleSignIn}
+      aria-label="התחבר עם Google"
     >
-      Sign in
+      <span lang="he">התחברות</span>
     </Button>
   );
-}
+});

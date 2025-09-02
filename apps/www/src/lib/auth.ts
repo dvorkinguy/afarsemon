@@ -1,6 +1,9 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "./db"
+import { getServerEnv } from "@afarsemon/env"
+
+const serverEnv = getServerEnv();
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -8,8 +11,8 @@ export const auth = betterAuth({
   }),
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: serverEnv.GOOGLE_CLIENT_ID,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
     },
   },
   advanced: {
@@ -25,5 +28,5 @@ export const auth = betterAuth({
       maxAge: 60 * 5 // Cache for 5 minutes
     }
   },
-  trustedOrigins: process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : undefined,
+  trustedOrigins: serverEnv.NEXT_PUBLIC_APP_URL ? [serverEnv.NEXT_PUBLIC_APP_URL] : undefined,
 })

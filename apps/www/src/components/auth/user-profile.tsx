@@ -20,6 +20,12 @@ export const UserProfile = React.memo(function UserProfile() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
+  const handleSignOut = React.useCallback(async () => {
+    await signOut();
+    router.replace("/");
+    // Removed unnecessary router.refresh()
+  }, [router]);
+
   if (isPending) {
     return <div aria-label="טוען..." role="status">טוען...</div>;
   }
@@ -32,54 +38,51 @@ export const UserProfile = React.memo(function UserProfile() {
     );
   }
 
-  const handleSignOut = React.useCallback(async () => {
-    await signOut();
-    router.replace("/");
-    // Removed unnecessary router.refresh()
-  }, [router]);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
+        <Avatar 
+          className="size-8 cursor-pointer hover:opacity-80 transition-opacity"
+          aria-label="תפריט משתמש"
+        >
           <AvatarImage
             src={session.user?.image || ""}
-            alt={session.user?.name || "User"}
+            alt={session.user?.name || "משתמש"}
             referrerPolicy="no-referrer"
           />
           <AvatarFallback>
             {(
               session.user?.name?.[0] ||
               session.user?.email?.[0] ||
-              "U"
+              "מ"
             ).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
+          <div className="flex flex-col space-y-1" lang="he">
             <p className="text-sm font-medium leading-none">
               {session.user?.name}
             </p>
-            <p className="text-xs leading-none text-muted-foreground">
+            <p className="text-xs leading-none text-muted-foreground" dir="ltr">
               {session.user?.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex items-center">
+          <Link href="/profile" className="flex items-center" aria-label="עבור לפרופיל האישי">
             <User className="mr-2 h-4 w-4" />
-            Your Profile
+            <span lang="he">הפרופיל שלי</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} variant="destructive">
+        <DropdownMenuItem onClick={handleSignOut} variant="destructive" aria-label="התנתק מהמערכת">
           <LogOut className="mr-2 h-4 w-4" />
-          Log out
+          <span lang="he">התנתקות</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});

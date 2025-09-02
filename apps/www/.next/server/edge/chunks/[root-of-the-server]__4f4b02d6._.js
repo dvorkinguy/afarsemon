@@ -32,19 +32,8 @@ function middleware(request) {
     const requestHeaders = new Headers(request.headers);
     // Generate a nonce for CSP
     const nonce = __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$buffer__$5b$external$5d$__$28$node$3a$buffer$2c$__cjs$29$__["Buffer"].from(crypto.randomUUID()).toString("base64");
-    // Define Content Security Policy
-    const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https:;
-    font-src 'self';
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  `.replace(/\s{2,}/g, " ").trim();
+    // Define Content Security Policy - relaxed for development, can be stricter in production
+    const cspHeader = ("TURBOPACK compile-time truthy", 1) ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; connect-src 'self' ws: wss:;` : "TURBOPACK unreachable";
     // Set request headers
     requestHeaders.set("x-nonce", nonce);
     // Create response with modified request headers

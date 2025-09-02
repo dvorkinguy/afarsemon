@@ -1,9 +1,10 @@
+import React from "react";
 import Link from "next/link";
 import { UserProfile } from "@/components/auth/user-profile";
 import { ModeToggle } from "./ui/mode-toggle";
 import { Sparkles } from "lucide-react";
 
-export function SiteHeader() {
+export const SiteHeader = React.memo(function SiteHeader() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -28,4 +29,4 @@ export function SiteHeader() {
       </div>
     </header>
   );
-}
+});
