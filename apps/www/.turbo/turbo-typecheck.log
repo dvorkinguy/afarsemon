@@ -1,0 +1,4 @@
+
+> @afarsemon/www@0.1.0 typecheck /home/gi/Documents/1_Projects/afarsemon/afarsemon/apps/www
+> tsc --noEmit
+

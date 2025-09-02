@@ -232,3 +232,33 @@ If you encounter any issues:
 ---
 
 **Happy coding! 🚀**
+
+
+---
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ > I want to showcase AI automations as a demos for gining trusat from vistors and getting to the point of the WOW EFFECT as fast as posssible.\                     │
+│   There should be implemented local GROW payments system\                                                                                                           │
+│   I will run all my automnations in n8n and make.com \                                                                                                              │
+│   \                                                                                                                                                                 │
+│   \                                                                                                                                                                 │
+│   My marketing website will have RAG Chatbot. |\                                                                                                                    │
+│   I wnat all the data and docoments to be in Supabase\                                                                                                              │
+│   Including RAG, Vector, SQL, Non SQL, Authentication and everything that backend needs. \                                                                          │
+│   \I want to be able automatically to backup all the data to Google Cloud and save it under diferrent rules.\                                                       │
+│   \                                                                                                                                                                 │
+│   As well i want to implement VAPI customer service.\                                                                                                               │
+│   \                                                                                                                                                                 │
+│   I want to be able to add additional apps to "Afarsemon" webapp. And be able to add differnt functionality. \                                                      │
+│   \\                                                                                                                                                                │
+│   \  
+suggest me best git strategy for development multi apps webapp in several langages. I will start with hebrew. I want to have two   │
+│   apps under apps/ folder\                                                                                                                                          │
+│   \                                                                                                                                                                 │
+│   apps/www - marketing site\                                                                                                                                        │
+│   apps/manage - Dashboard\                                                                                                                                          │
+│   \                                                                                                                                                                 │
+│   I want that users could login with email or google account. \                                                                                                     │
+│   The can have an acess to free tools in the free of charge as a logged in users only.\                                                                             │
+│   Then they will buy a monthly subscribtion or manually choose a tool they particalary will pay for. \                                                              │
+│   The tool - they are actually AI Workers that performs diferrent tasks for SMBs. \                                                                                 │
+│      
