@@ -1,11 +1,11 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
-    model: openai(process.env.OPENAI_MODEL || "gpt-5-mini"),
+    model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash"),
     messages: convertToModelMessages(messages),
   });
 

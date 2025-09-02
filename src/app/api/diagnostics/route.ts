@@ -9,7 +9,7 @@ interface DiagnosticsResponse {
     BETTER_AUTH_SECRET: boolean;
     GOOGLE_CLIENT_ID: boolean;
     GOOGLE_CLIENT_SECRET: boolean;
-    OPENAI_API_KEY: boolean;
+    GEMINI_API_KEY: boolean;
     NEXT_PUBLIC_APP_URL: boolean;
   };
   database: {
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     BETTER_AUTH_SECRET: Boolean(process.env.BETTER_AUTH_SECRET),
     GOOGLE_CLIENT_ID: Boolean(process.env.GOOGLE_CLIENT_ID),
     GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET),
-    OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
+    GEMINI_API_KEY: Boolean(process.env.GEMINI_API_KEY),
     NEXT_PUBLIC_APP_URL: Boolean(process.env.NEXT_PUBLIC_APP_URL),
   } as const;
 
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
 
   const authConfigured =
     env.BETTER_AUTH_SECRET && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET;
-  const aiConfigured = env.OPENAI_API_KEY; // We avoid live-calling the AI provider here
+  const aiConfigured = env.GEMINI_API_KEY; // We avoid live-calling the AI provider here
 
   const overallStatus: StatusLevel = (() => {
     if (!env.POSTGRES_URL || !dbConnected || !schemaApplied) return "error";
