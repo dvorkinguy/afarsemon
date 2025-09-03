@@ -3,7 +3,6 @@
   "buildCommand": "pnpm --filter=@afarsemon/www run build:production",
   "devCommand": "pnpm --filter=@afarsemon/www run dev",
   "installCommand": "pnpm install",
-  "outputDirectory": "apps/www/.next",
   "framework": "nextjs",
   "functions": {
     "apps/www/src/app/api/**/*.ts": {
