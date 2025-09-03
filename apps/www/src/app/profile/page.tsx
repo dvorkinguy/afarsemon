@@ -8,10 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Mail, Calendar, User, Shield, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProfilePage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+
+  // Handle navigation in useEffect to avoid side effects during render
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/");
+    }
+  }, [session, isPending, router]);
 
   if (isPending) {
     return (
@@ -22,8 +30,12 @@ export default function ProfilePage() {
   }
 
   if (!session) {
-    router.push("/");
-    return null;
+    // Show loading state while redirecting to avoid rendering content
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Redirecting...</div>
+      </div>
+    );
   }
 
   const user = session.user;

@@ -102,45 +102,9 @@ function validateClientEnv(): z.infer<typeof clientEnvSchema> {
   }
 }
 
-// Create validated environment objects (will throw on invalid env)
+// Create validated environment objects (lazy-loaded to avoid import-time errors)
 let serverEnv: z.infer<typeof serverEnvSchema> | undefined;
 let clientEnv: z.infer<typeof clientEnvSchema> | undefined;
-
-// Server-side initialization
-if (typeof window === 'undefined') {
-  try {
-    serverEnv = validateServerEnv();
-    
-    // Create client env for server-side rendering
-    const clientEnvVars = Object.keys(clientEnvSchema.shape).reduce((acc, key) => {
-      acc[key] = process.env[key];
-      return acc;
-    }, {} as Record<string, string | undefined>);
-    
-    clientEnv = clientEnvSchema.parse(clientEnvVars);
-  } catch (error) {
-    console.error('❌ Server environment validation failed:', error);
-    throw error;
-  }
-}
-
-// Client-side initialization (browser)
-if (typeof window !== 'undefined') {
-  try {
-    clientEnv = validateClientEnv();
-  } catch (error) {
-    console.error('❌ Client environment validation failed:', error);
-    throw error;
-  }
-}
-
-// Ensure we have the environments available
-if (typeof window === 'undefined' && !serverEnv) {
-  throw new Error('Server environment not initialized');
-}
-if (!clientEnv) {
-  throw new Error('Client environment not initialized');
-}
 
 // Export types
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -152,14 +116,36 @@ export const getServerEnv = (): z.infer<typeof serverEnvSchema> => {
     throw new Error('Server environment is not available on client side');
   }
   if (!serverEnv) {
-    throw new Error('Server environment not initialized');
+    // Lazy initialization on first access
+    try {
+      serverEnv = validateServerEnv();
+    } catch (error) {
+      console.error('❌ Server environment validation failed:', error);
+      throw error;
+    }
   }
   return serverEnv;
 };
 
 export const getClientEnv = (): z.infer<typeof clientEnvSchema> => {
   if (!clientEnv) {
-    throw new Error('Client environment not initialized');
+    // Lazy initialization on first access
+    try {
+      if (typeof window === 'undefined') {
+        // Server-side: create client env from server env
+        const clientEnvVars = Object.keys(clientEnvSchema.shape).reduce((acc, key) => {
+          acc[key] = process.env[key];
+          return acc;
+        }, {} as Record<string, string | undefined>);
+        clientEnv = clientEnvSchema.parse(clientEnvVars);
+      } else {
+        // Client-side: validate client env
+        clientEnv = validateClientEnv();
+      }
+    } catch (error) {
+      console.error('❌ Client environment validation failed:', error);
+      throw error;
+    }
   }
   return clientEnv;
 };
