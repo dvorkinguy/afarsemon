@@ -47,8 +47,15 @@ interface ErrorRetryState {
 type AuthMode = "signin" | "signup";
 
 export const ModernAuthForm = React.memo(function ModernAuthForm() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, error: sessionError } = useSession();
   const [isTransitionPending, startTransition] = useTransition();
+
+  // Debug session error
+  React.useEffect(() => {
+    if (sessionError && process.env.NODE_ENV === 'development') {
+      console.error('Session error in ModernAuthForm:', sessionError);
+    }
+  }, [sessionError]);
   const [mode, setMode] = useState<AuthMode>("signin");
   const [formData, setFormData] = useState<FormData>({
     email: "",

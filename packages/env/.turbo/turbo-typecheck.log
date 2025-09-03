@@ -8,4 +8,4 @@ error TS2688: Cannot find type definition file for 'react'.
 error TS2688: Cannot find type definition file for 'react-dom'.
   The file is in the program because:
     Entry point of type library 'react-dom' specified in compilerOptions
- ELIFECYCLE  Command failed with exit code 2.
+ ELIFECYCLE  Command failed with exit code 1.

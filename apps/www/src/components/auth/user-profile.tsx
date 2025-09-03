@@ -37,13 +37,40 @@ interface SignOutState {
 }
 
 export const UserProfile = React.memo(function UserProfile() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, error } = useSession();
   const router = useRouter();
   const [isPendingAction, startTransition] = useTransition();
   const [signOutState, setSignOutState] = useState<SignOutState>({
     isLoading: false,
     canRetry: false
   });
+
+  // Debug logging for session state
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('UserProfile session state:', { 
+        session, 
+        isPending, 
+        error,
+        hasData: !!session 
+      });
+    }
+  }, [session, isPending, error]);
+
+  // Add timeout for persistent loading states
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
+  React.useEffect(() => {
+    if (isPending) {
+      const timer = setTimeout(() => {
+        console.warn('Auth session loading timeout - this may indicate an issue with the auth configuration');
+        setLoadingTimeout(true);
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isPending]);
 
   // Enhanced sign out with error handling and retry
   const handleSignOut = useCallback(async () => {
@@ -85,10 +112,44 @@ export const UserProfile = React.memo(function UserProfile() {
           <Skeleton className="h-2 w-20 animate-pulse" style={{ animationDelay: '0.2s' }} />
         </div>
         
+        {/* Loading timeout warning */}
+        {loadingTimeout && (
+          <div className="fixed top-4 end-4 z-50">
+            <Alert variant="destructive" className="w-80" role="alert" aria-live="assertive">
+              <div className="flex items-start gap-2">
+                <Wifi className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <div className="flex-1 space-y-2">
+                  <AlertDescription>
+                    טעינת נתוני המשתמש לוקחת זמן רב מהצפוי. יתכן ויש בעיה בהתחברות לשרת.
+                  </AlertDescription>
+                </div>
+              </div>
+            </Alert>
+          </div>
+        )}
+        
         {/* Screen reader loading announcement */}
         <div className="sr-only" aria-live="polite">
           טוען פרטי משתמש...
         </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="flex items-center gap-3" role="status" aria-label="שגיאה בטעינת פרופיל משתמש">
+        <Alert variant="destructive" className="w-80" role="alert" aria-live="assertive">
+          <div className="flex items-start gap-2">
+            <Wifi className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <div className="flex-1 space-y-2">
+              <AlertDescription>
+                שגיאה בטעינת נתוני המשתמש: {error.message || 'שגיאה לא ידועה'}
+              </AlertDescription>
+            </div>
+          </div>
+        </Alert>
       </div>
     );
   }
