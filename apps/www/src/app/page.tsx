@@ -30,7 +30,7 @@ export default function HomePage() {
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/manage">
+            <Link href="/auth">
               <Button size="lg" variant="outline">
                 התחילו בחינם
               </Button>
@@ -183,7 +183,7 @@ export default function HomePage() {
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/manage">
+            <Link href="/auth">
               <Button size="lg" variant="outline">
                 דברו איתנו
               </Button>
