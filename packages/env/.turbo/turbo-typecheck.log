@@ -1,0 +1,11 @@
+
+> @afarsemon/env@0.1.0 typecheck /home/gi/Documents/1_Projects/afarsemon/afarsemon/packages/env
+> tsc --noEmit
+
+error TS2688: Cannot find type definition file for 'react'.
+  The file is in the program because:
+    Entry point of type library 'react' specified in compilerOptions
+error TS2688: Cannot find type definition file for 'react-dom'.
+  The file is in the program because:
+    Entry point of type library 'react-dom' specified in compilerOptions
+ ELIFECYCLE  Command failed with exit code 2.

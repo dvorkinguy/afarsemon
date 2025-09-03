@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter=@afarsemon/www run build:production",
+  "devCommand": "pnpm --filter=@afarsemon/www run dev",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/www/.next",
+  "framework": "nextjs",
+  "regions": ["all"],
+  "functions": {
+    "apps/www/src/app/api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}

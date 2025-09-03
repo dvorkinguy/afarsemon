@@ -1,0 +1,6 @@
+
+> @afarsemon/env@0.1.0 lint /home/gi/Documents/1_Projects/afarsemon/afarsemon/packages/env
+> eslint src/
+
+sh: 1: eslint: not found
+ ELIFECYCLE  Command failed.
