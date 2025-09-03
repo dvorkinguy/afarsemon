@@ -13,6 +13,8 @@ export default function AuthDebugPage() {
   const [manualSessionData, setManualSessionData] = React.useState<unknown>(null);
   const [manualSessionError, setManualSessionError] = React.useState<unknown>(null);
   const [isManualLoading, setIsManualLoading] = React.useState(false);
+  const [clientUrl, setClientUrl] = React.useState<string>('');
+  const [isClientSide, setIsClientSide] = React.useState(false);
 
   const fetchSessionManually = async () => {
     setIsManualLoading(true);
@@ -50,6 +52,10 @@ export default function AuthDebugPage() {
   };
 
   React.useEffect(() => {
+    // Set client-side values after mount to avoid hydration mismatch
+    setIsClientSide(true);
+    setClientUrl(window.location.origin);
+    
     // Test auth endpoint on load
     testAuthEndpoint();
   }, []);
@@ -157,19 +163,36 @@ export default function AuthDebugPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <strong>NEXT_PUBLIC_BETTER_AUTH_URL:</strong><br />
-                  <code>{process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'Not set'}</code>
+                  <code className={!isClientSide ? "opacity-50" : ""}>
+                    {isClientSide 
+                      ? (process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'Not set')
+                      : 'Loading...'
+                    }
+                  </code>
                 </div>
                 <div>
                   <strong>NEXT_PUBLIC_APP_URL:</strong><br />
-                  <code>{process.env.NEXT_PUBLIC_APP_URL || 'Not set'}</code>
+                  <code className={!isClientSide ? "opacity-50" : ""}>
+                    {isClientSide 
+                      ? (process.env.NEXT_PUBLIC_APP_URL || 'Not set')
+                      : 'Loading...'
+                    }
+                  </code>
                 </div>
                 <div>
                   <strong>NODE_ENV:</strong><br />
-                  <code>{process.env.NODE_ENV}</code>
+                  <code className={!isClientSide ? "opacity-50" : ""}>
+                    {isClientSide 
+                      ? process.env.NODE_ENV
+                      : 'Loading...'
+                    }
+                  </code>
                 </div>
                 <div>
                   <strong>Current URL:</strong><br />
-                  <code>{typeof window !== 'undefined' ? window.location.origin : 'Server-side'}</code>
+                  <code className={!isClientSide ? "opacity-50" : ""}>
+                    {isClientSide ? clientUrl : 'Loading...'}
+                  </code>
                 </div>
               </div>
             </div>

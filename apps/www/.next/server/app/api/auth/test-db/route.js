@@ -1,0 +1,11 @@
+const CHUNK_PUBLIC_PATH = "server/app/api/auth/test-db/route.js";
+const runtime = require("../../../../chunks/[turbopack]_runtime.js");
+runtime.loadChunk("server/chunks/3ef68_next_4142e5e1._.js");
+runtime.loadChunk("server/chunks/8e59f_@opentelemetry_api_build_esm_fa2266d7._.js");
+runtime.loadChunk("server/chunks/a1091_drizzle-orm_ce408604._.js");
+runtime.loadChunk("server/chunks/7fbd0_zod_v4_68e93c4f._.js");
+runtime.loadChunk("server/chunks/e3829_postgres_src_7b33d91e._.js");
+runtime.loadChunk("server/chunks/[root-of-the-server]__47c25949._.js");
+runtime.getOrInstantiateRuntimeModule("[project]/apps/www/.next-internal/server/app/api/auth/test-db/route/actions.js [app-rsc] (server actions loader, ecmascript)", CHUNK_PUBLIC_PATH);
+runtime.getOrInstantiateRuntimeModule("[project]/node_modules/.pnpm/next@15.4.6_@babel+core@7.28.3_@opentelemetry+api@1.9.0_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/apps/www/src/app/api/auth/test-db/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)", CHUNK_PUBLIC_PATH);
+module.exports = runtime.getOrInstantiateRuntimeModule("[project]/node_modules/.pnpm/next@15.4.6_@babel+core@7.28.3_@opentelemetry+api@1.9.0_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/apps/www/src/app/api/auth/test-db/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)", CHUNK_PUBLIC_PATH).exports;
