@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/schema';
-import { count } from 'drizzle-orm';
+import { count, sql } from 'drizzle-orm';
 
 /**
  * Test endpoint to verify database connection and Better Auth tables
@@ -28,12 +28,12 @@ export async function GET() {
     
     for (const tableName of tables) {
       try {
-        // This is a basic existence check - we try to count rows
-        const result = await db.execute(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        // This is a basic existence check - we try to count rows using proper Drizzle syntax
+        const result = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM "${tableName}"`));
         
         tableStatus[tableName] = {
           exists: true,
-          count: (result as unknown as { count: number }[])?.[0]?.count || 0
+          count: Number(result?.[0]?.count) || 0
         };
       } catch (error) {
         tableStatus[tableName] = {
