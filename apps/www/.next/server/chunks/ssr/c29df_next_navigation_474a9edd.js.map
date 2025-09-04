@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":["file:///home/gi/Documents/1_Projects/afarsemon/afarsemon/node_modules/.pnpm/next%4015.4.6_%40babel%2Bcore%407.28.3_%40opentelemetry%2Bapi%401.9.0_%40playwright%2Btest%401.55.0_react-d_369d37965ae8cf0a48106bfbb0e6af64/node_modules/next/navigation.js"],"sourcesContent":["module.exports = require('./dist/client/components/navigation')\n"],"names":[],"mappings":"AAAA,OAAO,OAAO","ignoreList":[0],"debugId":null}}]
+}

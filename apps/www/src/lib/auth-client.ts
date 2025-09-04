@@ -19,6 +19,9 @@ const getBaseURL = () => {
 
 const baseURL = getBaseURL();
 
+// Create a Set to track circular references
+const seen = new WeakSet();
+
 // Debug logging for client-side configuration
 if (typeof window !== 'undefined') {
   console.log('[Auth Client] Initializing with:', {
@@ -116,9 +119,6 @@ export const authClient = createAuthClient({
     }
   }
 })
-
-// Create a Set to track circular references
-const seen = new WeakSet();
 
 export const {
   signIn,
