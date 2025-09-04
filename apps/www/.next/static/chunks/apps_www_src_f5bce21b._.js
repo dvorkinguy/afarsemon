@@ -86,7 +86,10 @@ function isValidUrl(urlString) {
     }
 }
 function getEffectiveBaseUrl() {
-    return ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || "http://localhost:3000";
+    // Use production-first URL resolution logic matching auth-client.ts
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    return ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time truthy", 1) ? window.location.origin : "TURBOPACK unreachable");
 }
 async function testAuthEndpoints() {
     let baseUrl = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getEffectiveBaseUrl();
@@ -129,16 +132,23 @@ async function testAuthEndpoints() {
     return results;
 }
 function logAuthDebugInfo() {
-    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-    ;
-    console.group('🔧 Better Auth Debug Info');
+    // Always log in production to help debug deployment issues
+    const isProduction = ("TURBOPACK compile-time value", "development") === 'production';
+    console.group(("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : '🔧 Better Auth Debug Info');
     console.log('Environment:', ("TURBOPACK compile-time value", "development"));
     console.log('Effective Base URL:', getEffectiveBaseUrl());
+    console.log('Window Origin:', ("TURBOPACK compile-time truthy", 1) ? window.location.origin : "TURBOPACK unreachable");
+    // Show all environment variables in production for debugging
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
     const configChecks = validateAuthConfiguration();
     console.table(configChecks);
+    // Warn about localhost usage in production
+    if (isProduction && getEffectiveBaseUrl().includes('localhost')) //TURBOPACK unreachable
+    ;
     console.groupEnd();
 }
-// Auto-run debug logging in development
+// Auto-run debug logging in development and production (for deployment debugging)
 if ("TURBOPACK compile-time truthy", 1) {
     logAuthDebugInfo();
 }
@@ -164,9 +174,16 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$be
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$auth$2d$debug$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/www/src/lib/auth-debug.ts [app-client] (ecmascript)"); // Auto-run debug logging in development
 ;
 ;
-// Client-side environment variables (automatically injected by Next.js from root .env.local)
-// In production, Next.js will use the environment variables from the deployment
-const baseURL = ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time truthy", 1) ? window.location.origin : "TURBOPACK unreachable");
+// Client-side environment variables with production-first resolution
+// In production, use production URLs; in development, fallback to localhost
+const getBaseURL = ()=>{
+    // In production, prioritize production URLs
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    // In development, prioritize localhost
+    return ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time truthy", 1) ? window.location.origin : "TURBOPACK unreachable");
+};
+const baseURL = getBaseURL();
 // Debug logging for client-side configuration
 if ("TURBOPACK compile-time truthy", 1) {
     console.log('[Auth Client] Initializing with:', {
@@ -174,8 +191,12 @@ if ("TURBOPACK compile-time truthy", 1) {
         windowOrigin: window.location.origin,
         NEXT_PUBLIC_BETTER_AUTH_URL: ("TURBOPACK compile-time value", "http://localhost:3000"),
         NEXT_PUBLIC_APP_URL: ("TURBOPACK compile-time value", "http://localhost:3000"),
-        environment: ("TURBOPACK compile-time value", "development")
+        environment: ("TURBOPACK compile-time value", "development"),
+        isProduction: ("TURBOPACK compile-time value", "development") === 'production'
     });
+    // Warn if production is using localhost URLs
+    if (("TURBOPACK compile-time value", "development") === 'production' && baseURL.includes('localhost')) //TURBOPACK unreachable
+    ;
 }
 const authClient = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$better$2d$auth$40$1$2e$3$2e$4_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$better$2d$auth$2f$dist$2f$client$2f$react$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createAuthClient"])({
     baseURL,
@@ -1130,8 +1151,22 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
             columnNumber: 7
         }, this);
     }
-    // Handle error state
+    // Handle error state with improved messaging
     if (error) {
+        const getErrorMessage = ()=>{
+            const message = error.message || 'שגיאה לא ידועה';
+            // Provide helpful context for common authentication errors
+            if (message.includes('localhost') || message.includes('3000')) {
+                return 'שגיאת חיבור לשרת האימות. אנא נסו לרענן את הדף או פנו לתמיכה טכנית.';
+            }
+            if (message.includes('network') || message.includes('fetch')) {
+                return 'בעיית רשת. אנא בדקו את החיבור לאינטרנט ונסו שוב.';
+            }
+            if (message.includes('401') || message.includes('unauthorized')) {
+                return 'הפגה אינה תקפה. אנא התחברו מחדש.';
+            }
+            return "שגיאה בטעינת נתוני המשתמש: ".concat(message);
+        };
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "flex items-center gap-3",
             role: "status",
@@ -1149,40 +1184,37 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                             "aria-hidden": "true"
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                            lineNumber: 145,
+                            lineNumber: 164,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex-1 space-y-2",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDescription"], {
-                                children: [
-                                    "שגיאה בטעינת נתוני המשתמש: ",
-                                    error.message || 'שגיאה לא ידועה'
-                                ]
-                            }, void 0, true, {
+                                children: getErrorMessage()
+                            }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 147,
+                                lineNumber: 166,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                            lineNumber: 146,
+                            lineNumber: 165,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                    lineNumber: 144,
+                    lineNumber: 163,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                lineNumber: 143,
+                lineNumber: 162,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-            lineNumber: 142,
+            lineNumber: 161,
             columnNumber: 7
         }, this);
     }
@@ -1201,14 +1233,14 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                 "aria-hidden": "true"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 165,
+                                lineNumber: 184,
                                 columnNumber: 13
                             }, this),
                             "התחברות"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 164,
+                        lineNumber: 183,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1216,7 +1248,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                         "aria-hidden": "true"
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 168,
+                        lineNumber: 187,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1224,18 +1256,18 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                         "aria-hidden": "true"
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 171,
+                        lineNumber: 190,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                lineNumber: 160,
+                lineNumber: 179,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-            lineNumber: 159,
+            lineNumber: 178,
             columnNumber: 7
         }, this);
     }
@@ -1257,7 +1289,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                 "aria-hidden": "true"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 190,
+                                lineNumber: 209,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1267,7 +1299,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                         children: signOutState.error
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                        lineNumber: 192,
+                                        lineNumber: 211,
                                         columnNumber: 17
                                     }, this),
                                     signOutState.canRetry && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -1282,36 +1314,36 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                lineNumber: 201,
+                                                lineNumber: 220,
                                                 columnNumber: 21
                                             }, this),
                                             "נסו שוב"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                        lineNumber: 194,
+                                        lineNumber: 213,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 191,
+                                lineNumber: 210,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 189,
+                        lineNumber: 208,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                    lineNumber: 188,
+                    lineNumber: 207,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                lineNumber: 187,
+                lineNumber: 206,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenu"], {
@@ -1335,7 +1367,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             referrerPolicy: "no-referrer"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 225,
+                                            lineNumber: 244,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$avatar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AvatarFallback"], {
@@ -1343,13 +1375,13 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             children: userInitials
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 230,
+                                            lineNumber: 249,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 224,
+                                    lineNumber: 243,
                                     columnNumber: 13
                                 }, this),
                                 (signOutState.isLoading || isPendingAction) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1360,7 +1392,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             "aria-hidden": "true"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 238,
+                                            lineNumber: 257,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1368,13 +1400,13 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             children: "טוען פעולה..."
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 239,
+                                            lineNumber: 258,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 237,
+                                    lineNumber: 256,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1382,18 +1414,18 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                     "aria-label": "מחובר"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 244,
+                                    lineNumber: 263,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                            lineNumber: 213,
+                            lineNumber: 232,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 212,
+                        lineNumber: 231,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuContent"], {
@@ -1416,7 +1448,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                     referrerPolicy: "no-referrer"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                    lineNumber: 255,
+                                                    lineNumber: 274,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$avatar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AvatarFallback"], {
@@ -1424,13 +1456,13 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                     children: userInitials
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                    lineNumber: 260,
+                                                    lineNumber: 279,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 254,
+                                            lineNumber: 273,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1441,7 +1473,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                     children: ((_session_user6 = session.user) === null || _session_user6 === void 0 ? void 0 : _session_user6.name) || "משתמש"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                    lineNumber: 265,
+                                                    lineNumber: 284,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1450,7 +1482,7 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                     children: (_session_user7 = session.user) === null || _session_user7 === void 0 ? void 0 : _session_user7.email
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                    lineNumber: 268,
+                                                    lineNumber: 287,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -1464,38 +1496,38 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                             "aria-hidden": "true"
                                                         }, void 0, false, {
                                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                            lineNumber: 272,
+                                                            lineNumber: 291,
                                                             columnNumber: 19
                                                         }, this),
                                                         "משתמש פרו"
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                    lineNumber: 271,
+                                                    lineNumber: 290,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 264,
+                                            lineNumber: 283,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 253,
+                                    lineNumber: 272,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 252,
+                                lineNumber: 271,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuSeparator"], {
                                 className: "my-2"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 279,
+                                lineNumber: 298,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuItem"], {
@@ -1512,25 +1544,25 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             "aria-hidden": "true"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 290,
+                                            lineNumber: 309,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "הפרופיל שלי"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 291,
+                                            lineNumber: 310,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 289,
+                                    lineNumber: 308,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 281,
+                                lineNumber: 300,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuItem"], {
@@ -1547,25 +1579,25 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             "aria-hidden": "true"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 304,
+                                            lineNumber: 323,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "הגדרות"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 305,
+                                            lineNumber: 324,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 303,
+                                    lineNumber: 322,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 295,
+                                lineNumber: 314,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuItem"], {
@@ -1582,32 +1614,32 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             "aria-hidden": "true"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 318,
+                                            lineNumber: 337,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "עזרה ותמיכה"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 319,
+                                            lineNumber: 338,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 317,
+                                    lineNumber: 336,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 309,
+                                lineNumber: 328,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuSeparator"], {
                                 className: "my-2"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 323,
+                                lineNumber: 342,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuItem"], {
@@ -1627,26 +1659,26 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                lineNumber: 339,
+                                                lineNumber: 358,
                                                 columnNumber: 19
                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$539$2e$0_react$40$19$2e$1$2e$0$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__["LogOut"], {
                                                 className: "h-4 w-4",
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                                lineNumber: 341,
+                                                lineNumber: 360,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 337,
+                                            lineNumber: 356,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: signOutState.isLoading || isPendingAction ? "מתנתק..." : "התנתקות"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 344,
+                                            lineNumber: 363,
                                             columnNumber: 15
                                         }, this),
                                         (signOutState.isLoading || isPendingAction) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1655,24 +1687,24 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                                             children: "מבצע התנתקות..."
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                            lineNumber: 348,
+                                            lineNumber: 367,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                    lineNumber: 336,
+                                    lineNumber: 355,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                                lineNumber: 325,
+                                lineNumber: 344,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 251,
+                        lineNumber: 270,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1685,13 +1717,13 @@ const UserProfile = /*#__PURE__*/ _s(__TURBOPACK__imported__module__$5b$project$
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                        lineNumber: 357,
+                        lineNumber: 376,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/www/src/components/auth/user-profile.tsx",
-                lineNumber: 211,
+                lineNumber: 230,
                 columnNumber: 7
             }, this)
         ]

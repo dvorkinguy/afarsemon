@@ -4,11 +4,15 @@ import { nextCookies } from "better-auth/next-js"
 import { db } from "./db"
 import * as schema from "./schema"
 import { getServerEnv } from "@afarsemon/env"
+import { resolveProductionBaseURL, getProductionEnvVars } from "./production-env"
 
 const serverEnv = getServerEnv();
+const prodVars = getProductionEnvVars();
+
+// Use production-aware URL resolution
+const resolvedBaseURL = resolveProductionBaseURL();
 
 // Add debug logging for configuration
-const resolvedBaseURL = serverEnv.BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 console.log('[Auth Config] Initializing Better Auth with:', {
   baseURL: resolvedBaseURL,
   hasGoogleClientId: !!serverEnv.GOOGLE_CLIENT_ID,
@@ -16,10 +20,29 @@ console.log('[Auth Config] Initializing Better Auth with:', {
   hasBetterAuthSecret: !!serverEnv.BETTER_AUTH_SECRET,
   hasPostgresUrl: !!serverEnv.POSTGRES_URL,
   environment: process.env.NODE_ENV,
-  betterAuthUrl: serverEnv.BETTER_AUTH_URL,
-  publicBetterAuthUrl: serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL,
-  publicAppUrl: serverEnv.NEXT_PUBLIC_APP_URL
+  // Show both original and production-safe URLs
+  originalUrls: {
+    betterAuthUrl: serverEnv.BETTER_AUTH_URL,
+    publicBetterAuthUrl: serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL,
+    publicAppUrl: serverEnv.NEXT_PUBLIC_APP_URL,
+  },
+  productionSafeUrls: {
+    betterAuthUrl: prodVars.BETTER_AUTH_URL,
+    publicBetterAuthUrl: prodVars.NEXT_PUBLIC_BETTER_AUTH_URL,
+    publicAppUrl: prodVars.NEXT_PUBLIC_APP_URL,
+  },
+  isProduction: prodVars.isProduction,
+  // Additional debugging
+  vercelEnv: process.env.VERCEL_ENV,
+  vercelUrl: process.env.VERCEL_URL,
 });
+
+// Warn if production is using localhost URLs
+if (process.env.NODE_ENV === 'production' && resolvedBaseURL.includes('localhost')) {
+  console.warn('⚠️ [CRITICAL] Production server auth is using localhost URL!');
+  console.warn('This will cause authentication failures. Check your production environment variables.');
+  console.warn('Expected production URL format: https://afarsemon.com');
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -85,12 +108,14 @@ export const auth = betterAuth({
     }
   },
   trustedOrigins: [
-    serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    serverEnv.BETTER_AUTH_URL || "http://localhost:3000",
-    serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+    resolvedBaseURL,
+    prodVars.NEXT_PUBLIC_APP_URL,
+    prodVars.BETTER_AUTH_URL,
+    prodVars.NEXT_PUBLIC_BETTER_AUTH_URL,
     "https://afarsemon.com",
-    "http://localhost:3000"
-  ].filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
+    ...(prodVars.isProduction ? [] : ["http://localhost:3000"]) // Only allow localhost in development
+  ].filter((url): url is string => Boolean(url))
+   .filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
   plugins: [
     nextCookies(), // Must be the last plugin for Next.js cookie handling
   ],

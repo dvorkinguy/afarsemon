@@ -1,11 +1,23 @@
 import { createAuthClient } from "better-auth/react"
 import "./auth-debug" // Auto-run debug logging in development
 
-// Client-side environment variables (automatically injected by Next.js from root .env.local)
-// In production, Next.js will use the environment variables from the deployment
-const baseURL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 
-                process.env.NEXT_PUBLIC_APP_URL || 
-                (typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000");
+// Client-side environment variables with production-first resolution
+// In production, use production URLs; in development, fallback to localhost
+const getBaseURL = () => {
+  // In production, prioritize production URLs
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 
+           process.env.NEXT_PUBLIC_APP_URL || 
+           (typeof window !== 'undefined' ? window.location.origin : "https://afarsemon.com");
+  }
+  
+  // In development, prioritize localhost
+  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 
+         process.env.NEXT_PUBLIC_APP_URL || 
+         (typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000");
+};
+
+const baseURL = getBaseURL();
 
 // Debug logging for client-side configuration
 if (typeof window !== 'undefined') {
@@ -14,8 +26,15 @@ if (typeof window !== 'undefined') {
     windowOrigin: window.location.origin,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    isProduction: process.env.NODE_ENV === 'production'
   });
+  
+  // Warn if production is using localhost URLs
+  if (process.env.NODE_ENV === 'production' && baseURL.includes('localhost')) {
+    console.warn('⚠️ Production environment is using localhost URL. This may cause authentication issues.');
+    console.warn('Check your environment variables configuration in your deployment platform.');
+  }
 }
 
 export const authClient = createAuthClient({

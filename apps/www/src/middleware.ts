@@ -1,58 +1,33 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Clone the request headers
-  const requestHeaders = new Headers(request.headers);
-
-  // Add CORS headers for auth endpoints
-  if (request.nextUrl.pathname.startsWith('/api/auth')) {
-    const response = NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
+  // Log environment variables for debugging in production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[Middleware] Production Environment Check:', {
+      host: request.headers.get('host'),
+      url: request.url,
+      userAgent: request.headers.get('user-agent'),
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL: process.env.VERCEL,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        VERCEL_URL: process.env.VERCEL_URL,
+        hasOriginalBetterAuthUrl: !!process.env.BETTER_AUTH_URL,
+        originalBetterAuthUrl: process.env.BETTER_AUTH_URL,
+        hasPublicBetterAuthUrl: !!process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+        publicBetterAuthUrl: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+      }
     });
-
-    // Set CORS headers for production
-    const origin = request.headers.get('origin');
-    const allowedOrigins = [
-      'https://afarsemon.com',
-      'https://www.afarsemon.com',
-      'https://manage.afarsemon.com',
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ];
-
-    if (origin && allowedOrigins.includes(origin)) {
-      response.headers.set('Access-Control-Allow-Origin', origin);
-    }
-
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
-    response.headers.set('Access-Control-Max-Age', '86400');
-
-    // Handle preflight requests
-    if (request.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 200, headers: response.headers });
-    }
-
-    return response;
   }
 
-  // For all other requests, just pass through
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  return NextResponse.next()
 }
 
+// Configure which paths the middleware runs on
 export const config = {
   matcher: [
-    // Match all API routes
-    '/api/:path*',
-    // Exclude static files
+    // Skip all internal paths (_next)
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
-};
+}

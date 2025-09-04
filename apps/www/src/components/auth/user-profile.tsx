@@ -136,8 +136,27 @@ export const UserProfile = React.memo(function UserProfile() {
     );
   }
 
-  // Handle error state
+  // Handle error state with improved messaging
   if (error) {
+    const getErrorMessage = () => {
+      const message = error.message || 'שגיאה לא ידועה';
+      
+      // Provide helpful context for common authentication errors
+      if (message.includes('localhost') || message.includes('3000')) {
+        return 'שגיאת חיבור לשרת האימות. אנא נסו לרענן את הדף או פנו לתמיכה טכנית.';
+      }
+      
+      if (message.includes('network') || message.includes('fetch')) {
+        return 'בעיית רשת. אנא בדקו את החיבור לאינטרנט ונסו שוב.';
+      }
+      
+      if (message.includes('401') || message.includes('unauthorized')) {
+        return 'הפגה אינה תקפה. אנא התחברו מחדש.';
+      }
+      
+      return `שגיאה בטעינת נתוני המשתמש: ${message}`;
+    };
+
     return (
       <div className="flex items-center gap-3" role="status" aria-label="שגיאה בטעינת פרופיל משתמש">
         <Alert variant="destructive" className="w-80" role="alert" aria-live="assertive">
@@ -145,7 +164,7 @@ export const UserProfile = React.memo(function UserProfile() {
             <Wifi className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div className="flex-1 space-y-2">
               <AlertDescription>
-                שגיאה בטעינת נתוני המשתמש: {error.message || 'שגיאה לא ידועה'}
+                {getErrorMessage()}
               </AlertDescription>
             </div>
           </div>

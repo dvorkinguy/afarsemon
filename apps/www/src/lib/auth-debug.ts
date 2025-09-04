@@ -66,9 +66,16 @@ export function isValidUrl(urlString: string): boolean {
 }
 
 export function getEffectiveBaseUrl(): string {
+  // Use production-first URL resolution logic matching auth-client.ts
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 
+           process.env.NEXT_PUBLIC_APP_URL || 
+           (typeof window !== 'undefined' ? window.location.origin : "https://afarsemon.com");
+  }
+  
   return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 
          process.env.NEXT_PUBLIC_APP_URL || 
-         "http://localhost:3000";
+         (typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000");
 }
 
 export async function testAuthEndpoints(baseUrl: string = getEffectiveBaseUrl()) {
@@ -116,22 +123,37 @@ export async function testAuthEndpoints(baseUrl: string = getEffectiveBaseUrl())
 }
 
 export function logAuthDebugInfo() {
-  if (process.env.NODE_ENV !== 'development') {
-    return;
-  }
-
-  console.group('🔧 Better Auth Debug Info');
+  // Always log in production to help debug deployment issues
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  console.group(isProduction ? '🔧 Better Auth Production Debug Info' : '🔧 Better Auth Debug Info');
   
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Effective Base URL:', getEffectiveBaseUrl());
+  console.log('Window Origin:', typeof window !== 'undefined' ? window.location.origin : 'Server-side');
+  
+  // Show all environment variables in production for debugging
+  if (isProduction) {
+    console.log('Environment Variables:', {
+      NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    });
+  }
   
   const configChecks = validateAuthConfiguration();
   console.table(configChecks);
   
+  // Warn about localhost usage in production
+  if (isProduction && getEffectiveBaseUrl().includes('localhost')) {
+    console.error('⚠️ CRITICAL: Production is using localhost URL!');
+    console.error('This will cause authentication failures.');
+    console.error('Check your deployment environment variables.');
+  }
+  
   console.groupEnd();
 }
 
-// Auto-run debug logging in development
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+// Auto-run debug logging in development and production (for deployment debugging)
+if (typeof window !== 'undefined') {
   logAuthDebugInfo();
 }

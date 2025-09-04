@@ -383,8 +383,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$packages$2f$env$2f$src$2f$in
 ;
 ;
 const serverEnv = (0, __TURBOPACK__imported__module__$5b$project$5d2f$packages$2f$env$2f$src$2f$index$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getServerEnv"])();
+// Production-first URL resolution for server-side auth
+const getServerBaseURL = ()=>{
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    return serverEnv.BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+};
+const resolvedBaseURL = getServerBaseURL();
 // Add debug logging for configuration
-const resolvedBaseURL = serverEnv.BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 console.log('[Auth Config] Initializing Better Auth with:', {
     baseURL: resolvedBaseURL,
     hasGoogleClientId: !!serverEnv.GOOGLE_CLIENT_ID,
@@ -394,8 +400,12 @@ console.log('[Auth Config] Initializing Better Auth with:', {
     environment: ("TURBOPACK compile-time value", "development"),
     betterAuthUrl: serverEnv.BETTER_AUTH_URL,
     publicBetterAuthUrl: serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL,
-    publicAppUrl: serverEnv.NEXT_PUBLIC_APP_URL
+    publicAppUrl: serverEnv.NEXT_PUBLIC_APP_URL,
+    isProduction: ("TURBOPACK compile-time value", "development") === 'production'
 });
+// Warn if production is using localhost URLs
+if (("TURBOPACK compile-time value", "development") === 'production' && resolvedBaseURL.includes('localhost')) //TURBOPACK unreachable
+;
 const auth = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$better$2d$auth$40$1$2e$3$2e$4_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$better$2d$auth$2f$dist$2f$shared$2f$better$2d$auth$2e$Cbhy6WDJ$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__b__as__betterAuth$3e$__["betterAuth"])({
     database: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$better$2d$auth$40$1$2e$3$2e$4_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$better$2d$auth$2f$dist$2f$adapters$2f$drizzle$2d$adapter$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["drizzleAdapter"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"], {
         provider: "pg",
@@ -458,12 +468,13 @@ const auth = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f
         }
     },
     trustedOrigins: [
-        serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-        serverEnv.BETTER_AUTH_URL || "http://localhost:3000",
-        serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+        resolvedBaseURL,
+        serverEnv.NEXT_PUBLIC_APP_URL,
+        serverEnv.BETTER_AUTH_URL,
+        serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL,
         "https://afarsemon.com",
         "http://localhost:3000"
-    ].filter((url, index, self)=>self.indexOf(url) === index),
+    ].filter((url)=>Boolean(url)).filter((url, index, self)=>self.indexOf(url) === index),
     plugins: [
         (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$better$2d$auth$40$1$2e$3$2e$4_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$better$2d$auth$2f$dist$2f$integrations$2f$next$2d$js$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["nextCookies"])()
     ]
