@@ -234,5 +234,3 @@ If you encounter any issues:
 **Happy coding! 🚀**
 
 
-POSTGRES_URL="postgresql://postgres:tcqZ43BugoQEAcCM@db.xtvneouutvxjpxyhxbsw.supabase.co:5432/postgres"
-DATABASE_URL="postgresql://postgres:tcqZ43BugoQEAcCM@db.xtvneouutvxjpxyhxbsw.supabase.co:5432/postgres"
