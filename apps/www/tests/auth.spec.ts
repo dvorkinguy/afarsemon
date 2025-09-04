@@ -266,6 +266,212 @@ test.describe('Authentication Flow Tests', () => {
     }
   });
 
+  test('should test diagnostic endpoints', async ({ page }) => {
+    console.log('Testing diagnostic endpoints...');
+    
+    // Test health endpoint
+    console.log('Testing /api/health endpoint');
+    const healthResponse = await page.goto('/api/health');
+    await page.waitForLoadState('networkidle');
+    
+    console.log(`Health endpoint status: ${healthResponse?.status()}`);
+    
+    if (healthResponse?.ok()) {
+      const healthBody = await page.textContent('body');
+      console.log(`Health endpoint response: ${healthBody}`);
+    } else {
+      console.log('ERROR: Health endpoint not accessible');
+    }
+    
+    // Take screenshot of health response
+    await page.screenshot({ 
+      path: 'tests/screenshots/health-endpoint.png', 
+      fullPage: true 
+    });
+    
+    // Test auth config endpoint
+    console.log('Testing /api/auth/check-config endpoint');
+    const configResponse = await page.goto('/api/auth/check-config');
+    await page.waitForLoadState('networkidle');
+    
+    console.log(`Config endpoint status: ${configResponse?.status()}`);
+    
+    if (configResponse?.ok()) {
+      const configBody = await page.textContent('body');
+      console.log(`Config endpoint response: ${configBody}`);
+      
+      // Try to parse as JSON to check the config values
+      try {
+        const configData = JSON.parse(configBody || '{}');
+        console.log('Environment variable check:');
+        console.log(`- NEXTAUTH_URL: ${configData.NEXTAUTH_URL}`);
+        console.log(`- NEXTAUTH_SECRET exists: ${configData.NEXTAUTH_SECRET_EXISTS}`);
+        console.log(`- GOOGLE_CLIENT_ID exists: ${configData.GOOGLE_CLIENT_ID_EXISTS}`);
+        console.log(`- GOOGLE_CLIENT_SECRET exists: ${configData.GOOGLE_CLIENT_SECRET_EXISTS}`);
+        
+        // Check for localhost in NEXTAUTH_URL
+        if (configData.NEXTAUTH_URL && configData.NEXTAUTH_URL.includes('localhost')) {
+          console.log(`ERROR: NEXTAUTH_URL still contains localhost: ${configData.NEXTAUTH_URL}`);
+        } else if (configData.NEXTAUTH_URL && configData.NEXTAUTH_URL.includes('afarsemon.com')) {
+          console.log(`SUCCESS: NEXTAUTH_URL is correctly set to production: ${configData.NEXTAUTH_URL}`);
+        }
+      } catch (error) {
+        console.log(`Could not parse config response as JSON: ${error}`);
+      }
+    } else {
+      console.log('ERROR: Config endpoint not accessible');
+    }
+    
+    // Take screenshot of config response
+    await page.screenshot({ 
+      path: 'tests/screenshots/config-endpoint.png', 
+      fullPage: true 
+    });
+  });
+
+  test('should test complete OAuth flow with detailed logging', async ({ page }) => {
+    console.log('Testing complete OAuth flow with detailed logging...');
+    
+    // Start from auth page
+    await page.goto('/auth');
+    await page.waitForLoadState('networkidle');
+    
+    // Take initial screenshot
+    await page.screenshot({ 
+      path: 'tests/screenshots/oauth-detailed-initial.png', 
+      fullPage: true 
+    });
+    
+    // Check current URL
+    console.log(`Current URL: ${page.url()}`);
+    
+    // Find Google OAuth button with more specific selectors
+    const googleAuthSelectors = [
+      'button:has-text("Google")',
+      'button:has-text("Sign in with Google")',
+      'button:has-text("Continue with Google")',
+      'a:has-text("Google")',
+      '[data-provider="google"]',
+      '[data-testid="google-auth"]',
+      'form[action*="google"] button',
+      'form[action*="oauth"] button'
+    ];
+    
+    let googleAuthButton = null;
+    for (const selector of googleAuthSelectors) {
+      const button = page.locator(selector);
+      if (await button.count() > 0) {
+        googleAuthButton = button.first();
+        console.log(`Found Google auth element with selector: ${selector}`);
+        break;
+      }
+    }
+    
+    if (!googleAuthButton) {
+      console.log('No Google OAuth button found, checking page content...');
+      const pageContent = await page.content();
+      console.log('Page content preview (first 1000 chars):', pageContent.substring(0, 1000));
+      
+      // Look for any forms on the page
+      const forms = await page.locator('form').all();
+      console.log(`Found ${forms.length} forms on the page`);
+      
+      for (let i = 0; i < forms.length; i++) {
+        const form = forms[i];
+        const action = await form.getAttribute('action');
+        const method = await form.getAttribute('method');
+        console.log(`Form ${i}: action=${action}, method=${method}`);
+      }
+      
+      return;
+    }
+    
+    // Get button details
+    const buttonText = await googleAuthButton.textContent();
+    const buttonHref = await googleAuthButton.getAttribute('href');
+    const buttonFormAction = await googleAuthButton.getAttribute('formaction');
+    
+    console.log(`Button text: "${buttonText}"`);
+    console.log(`Button href: ${buttonHref}`);
+    console.log(`Button formaction: ${buttonFormAction}`);
+    
+    // Scroll button into view and take screenshot
+    await googleAuthButton.scrollIntoViewIfNeeded();
+    await page.screenshot({ 
+      path: 'tests/screenshots/oauth-detailed-button.png', 
+      fullPage: true 
+    });
+    
+    // Set up navigation monitoring
+    let redirectUrl = '';
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        redirectUrl = frame.url();
+        console.log(`Navigation event: ${redirectUrl}`);
+      }
+    });
+    
+    // Monitor network requests
+    const networkRequests: string[] = [];
+    page.on('request', (request) => {
+      networkRequests.push(`${request.method()} ${request.url()}`);
+    });
+    
+    try {
+      console.log('Clicking Google OAuth button...');
+      
+      // Click the button
+      await googleAuthButton.click();
+      
+      // Wait for navigation or timeout
+      try {
+        await page.waitForURL('**/*', { timeout: 5000 });
+      } catch (error) {
+        console.log('No navigation detected within 5 seconds');
+      }
+      
+      // Wait a bit more for any async operations
+      await page.waitForTimeout(3000);
+      
+      // Take screenshot of current state
+      await page.screenshot({ 
+        path: 'tests/screenshots/oauth-detailed-after-click.png', 
+        fullPage: true 
+      });
+      
+      const currentUrl = page.url();
+      console.log(`URL after click: ${currentUrl}`);
+      
+      // Analyze the result
+      if (currentUrl.includes('accounts.google.com')) {
+        console.log('SUCCESS: Redirected to Google OAuth');
+      } else if (currentUrl.includes('oauth.googleusercontent.com')) {
+        console.log('SUCCESS: On Google OAuth domain');
+      } else if (currentUrl.includes('localhost')) {
+        console.log(`ERROR: Redirected to localhost: ${currentUrl}`);
+      } else if (currentUrl === page.url()) {
+        console.log('WARNING: No navigation occurred - stayed on same page');
+      } else {
+        console.log(`INFO: Navigated to: ${currentUrl}`);
+      }
+      
+      // Log recent network requests
+      console.log('Recent network requests:');
+      networkRequests.slice(-10).forEach(req => console.log(`  ${req}`));
+      
+    } catch (error) {
+      console.log(`Error during OAuth flow test: ${error}`);
+      await page.screenshot({ 
+        path: 'tests/screenshots/oauth-detailed-error.png', 
+        fullPage: true 
+      });
+    }
+    
+    // Check console for any JavaScript errors
+    console.log('JavaScript console messages during OAuth test:', consoleMessages);
+    console.log('Network errors during OAuth test:', networkErrors);
+  });
+
   test.afterEach(async ({ page }) => {
     // Final console and network error summary
     if (consoleMessages.length > 0) {
