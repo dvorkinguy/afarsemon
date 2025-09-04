@@ -93,14 +93,60 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
 
   // Error categorization helper
   const categorizeError = useCallback((error: unknown): { 
-    type: 'network' | 'auth' | 'validation' | 'unknown', 
+    type: 'network' | 'auth' | 'validation' | 'server' | 'unknown', 
     canRetry: boolean,
     message: string 
   } => {
+    // Handle error objects with status codes (from fetch responses)
+    if (error && typeof error === 'object' && 'status' in error) {
+      const status = (error as { status: number }).status;
+      
+      if (status >= 500 && status < 600) {
+        return {
+          type: 'server',
+          canRetry: true,
+          message: 'שגיאת שרת זמנית. אנא נסו שוב בעוד כמה רגעים. אם הבעיה נמשכת, פנו לתמיכה.'
+        };
+      }
+      
+      if (status === 401 || status === 403) {
+        return {
+          type: 'auth',
+          canRetry: false,
+          message: 'פרטי הגישה שגויים. אנא בדקו את האימייל והסיסמה.'
+        };
+      }
+      
+      if (status === 409) {
+        return {
+          type: 'validation',
+          canRetry: false,
+          message: 'משתמש עם אימייל זה כבר קיים. נסו להתחבר או השתמשו באימייל אחר.'
+        };
+      }
+      
+      if (status === 400) {
+        return {
+          type: 'validation',
+          canRetry: false,
+          message: 'פרטי הבקשה שגויים. אנא בדקו את הנתונים שהוזנו.'
+        };
+      }
+      
+      if (status >= 400 && status < 500) {
+        return {
+          type: 'validation',
+          canRetry: false,
+          message: 'בעיה בפרטים שהוזנו. אנא בדקו ונסו שוב.'
+        };
+      }
+    }
+    
+    // Handle string error messages
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorString = errorMessage.toLowerCase();
     
-    if (errorString.includes('network') || errorString.includes('fetch') || errorString.includes('timeout')) {
+    if (errorString.includes('network') || errorString.includes('fetch') || errorString.includes('timeout') || errorString.includes('connection')) {
       return {
         type: 'network',
         canRetry: true,
@@ -108,7 +154,7 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
       };
     }
     
-    if (errorString.includes('invalid') || errorString.includes('wrong') || errorString.includes('incorrect')) {
+    if (errorString.includes('invalid') || errorString.includes('wrong') || errorString.includes('incorrect') || errorString.includes('unauthorized')) {
       return {
         type: 'auth',
         canRetry: false,
@@ -116,11 +162,19 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
       };
     }
     
-    if (errorString.includes('exists') || errorString.includes('already')) {
+    if (errorString.includes('exists') || errorString.includes('already') || errorString.includes('conflict')) {
       return {
         type: 'validation',
         canRetry: false,
         message: 'משתמש עם אימייל זה כבר קיים. נסו להתחבר או השתמשו באימייל אחר.'
+      };
+    }
+    
+    if (errorString.includes('server') || errorString.includes('internal') || errorString.includes('500')) {
+      return {
+        type: 'server',
+        canRetry: true,
+        message: 'שגיאת שרת זמנית. אנא נסו שוב בעוד כמה רגעים.'
       };
     }
     
@@ -218,6 +272,9 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
         
         console.error('=== End Google Sign-In Error Details ===');
         
+        // Clear any previous success messages
+        setSuccess("");
+        
         const errorDetails = categorizeError(error);
         setErrors({ general: errorDetails.message });
         
@@ -247,23 +304,34 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
         resetRetryState();
 
         if (mode === "signin") {
-          await signIn.email({
+          const result = await signIn.email({
             email: formData.email,
             password: formData.password,
             callbackURL: "/dashboard",
           });
-          setSuccess("התחברות בוצעה בהצלחה!");
+          
+          // Only show success if sign in actually succeeded
+          if (result && !result.error) {
+            setSuccess("התחברות בוצעה בהצלחה!");
+          }
         } else {
-          await signUp.email({
+          const result = await signUp.email({
             email: formData.email,
             password: formData.password,
             name: formData.name!,
             callbackURL: "/onboarding",
           });
-          setSuccess("הרשמה בוצעה בהצלחה! ברוכים הבאים!");
+          
+          // Only show success if sign up actually succeeded
+          if (result && !result.error) {
+            setSuccess("הרשמה בוצעה בהצלחה! ברוכים הבאים!");
+          }
         }
       } catch (error: unknown) {
         console.error('Authentication error:', error);
+        
+        // Clear any previous success messages
+        setSuccess("");
         
         const errorDetails = categorizeError(error);
         setErrors({ general: errorDetails.message });

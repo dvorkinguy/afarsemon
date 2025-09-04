@@ -241,27 +241,74 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
     ]);
     // Error categorization helper
     const categorizeError = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])((error)=>{
+        // Handle error objects with status codes (from fetch responses)
+        if (error && typeof error === 'object' && 'status' in error) {
+            const status = error.status;
+            if (status >= 500 && status < 600) {
+                return {
+                    type: 'server',
+                    canRetry: true,
+                    message: 'שגיאת שרת זמנית. אנא נסו שוב בעוד כמה רגעים. אם הבעיה נמשכת, פנו לתמיכה.'
+                };
+            }
+            if (status === 401 || status === 403) {
+                return {
+                    type: 'auth',
+                    canRetry: false,
+                    message: 'פרטי הגישה שגויים. אנא בדקו את האימייל והסיסמה.'
+                };
+            }
+            if (status === 409) {
+                return {
+                    type: 'validation',
+                    canRetry: false,
+                    message: 'משתמש עם אימייל זה כבר קיים. נסו להתחבר או השתמשו באימייל אחר.'
+                };
+            }
+            if (status === 400) {
+                return {
+                    type: 'validation',
+                    canRetry: false,
+                    message: 'פרטי הבקשה שגויים. אנא בדקו את הנתונים שהוזנו.'
+                };
+            }
+            if (status >= 400 && status < 500) {
+                return {
+                    type: 'validation',
+                    canRetry: false,
+                    message: 'בעיה בפרטים שהוזנו. אנא בדקו ונסו שוב.'
+                };
+            }
+        }
+        // Handle string error messages
         const errorMessage = error instanceof Error ? error.message : String(error);
         const errorString = errorMessage.toLowerCase();
-        if (errorString.includes('network') || errorString.includes('fetch') || errorString.includes('timeout')) {
+        if (errorString.includes('network') || errorString.includes('fetch') || errorString.includes('timeout') || errorString.includes('connection')) {
             return {
                 type: 'network',
                 canRetry: true,
                 message: 'בעיית רשת. אנא בדקו את החיבור לאינטרנט ונסו שוב.'
             };
         }
-        if (errorString.includes('invalid') || errorString.includes('wrong') || errorString.includes('incorrect')) {
+        if (errorString.includes('invalid') || errorString.includes('wrong') || errorString.includes('incorrect') || errorString.includes('unauthorized')) {
             return {
                 type: 'auth',
                 canRetry: false,
                 message: 'אימייל או סיסמה שגויים. אנא בדקו את הפרטים.'
             };
         }
-        if (errorString.includes('exists') || errorString.includes('already')) {
+        if (errorString.includes('exists') || errorString.includes('already') || errorString.includes('conflict')) {
             return {
                 type: 'validation',
                 canRetry: false,
                 message: 'משתמש עם אימייל זה כבר קיים. נסו להתחבר או השתמשו באימייל אחר.'
+            };
+        }
+        if (errorString.includes('server') || errorString.includes('internal') || errorString.includes('500')) {
+            return {
+                type: 'server',
+                canRetry: true,
+                message: 'שגיאת שרת זמנית. אנא נסו שוב בעוד כמה רגעים.'
             };
         }
         return {
@@ -356,6 +403,8 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                     }
                 }
                 console.error('=== End Google Sign-In Error Details ===');
+                // Clear any previous success messages
+                setSuccess("");
                 const errorDetails = categorizeError(error);
                 setErrors({
                     general: errorDetails.message
@@ -387,23 +436,31 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                 setErrors({});
                 resetRetryState();
                 if (mode === "signin") {
-                    await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$auth$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["signIn"].email({
+                    const result = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$auth$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["signIn"].email({
                         email: formData.email,
                         password: formData.password,
                         callbackURL: "/dashboard"
                     });
-                    setSuccess("התחברות בוצעה בהצלחה!");
+                    // Only show success if sign in actually succeeded
+                    if (result && !result.error) {
+                        setSuccess("התחברות בוצעה בהצלחה!");
+                    }
                 } else {
-                    await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$auth$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["signUp"].email({
+                    const result = await __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$auth$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["signUp"].email({
                         email: formData.email,
                         password: formData.password,
                         name: formData.name,
                         callbackURL: "/onboarding"
                     });
-                    setSuccess("הרשמה בוצעה בהצלחה! ברוכים הבאים!");
+                    // Only show success if sign up actually succeeded
+                    if (result && !result.error) {
+                        setSuccess("הרשמה בוצעה בהצלחה! ברוכים הבאים!");
+                    }
                 }
             } catch (error) {
                 console.error('Authentication error:', error);
+                // Clear any previous success messages
+                setSuccess("");
                 const errorDetails = categorizeError(error);
                 setErrors({
                     general: errorDetails.message
@@ -468,12 +525,12 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                 className: "h-6 w-6 rounded"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 318,
+                                lineNumber: 386,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 317,
+                            lineNumber: 385,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -483,26 +540,26 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     className: "h-8 w-48 mx-auto"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 323,
+                                    lineNumber: 391,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$skeleton$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Skeleton"], {
                                     className: "h-5 w-72 mx-auto"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 324,
+                                    lineNumber: 392,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 322,
+                            lineNumber: 390,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                    lineNumber: 315,
+                    lineNumber: 383,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -512,7 +569,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                             className: "h-11 w-full rounded-md"
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 330,
+                            lineNumber: 398,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -522,7 +579,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     className: "h-px w-full"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 334,
+                                    lineNumber: 402,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -531,18 +588,18 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         className: "h-4 w-8 bg-background"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 336,
+                                        lineNumber: 404,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 335,
+                                    lineNumber: 403,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 333,
+                            lineNumber: 401,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -555,7 +612,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             className: "h-4 w-20"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 344,
+                                            lineNumber: 412,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -565,7 +622,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     className: "h-11 w-full"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 346,
+                                                    lineNumber: 414,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -574,24 +631,24 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                         className: "h-4 w-4 rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                        lineNumber: 348,
+                                                        lineNumber: 416,
                                                         columnNumber: 19
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 347,
+                                                    lineNumber: 415,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 345,
+                                            lineNumber: 413,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 343,
+                                    lineNumber: 411,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -601,7 +658,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             className: "h-4 w-16"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 355,
+                                            lineNumber: 423,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -611,7 +668,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     className: "h-11 w-full"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 357,
+                                                    lineNumber: 425,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -620,12 +677,12 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                         className: "h-4 w-4 rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                        lineNumber: 359,
+                                                        lineNumber: 427,
                                                         columnNumber: 19
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 358,
+                                                    lineNumber: 426,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -634,37 +691,37 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                         className: "h-4 w-4 rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                        lineNumber: 362,
+                                                        lineNumber: 430,
                                                         columnNumber: 19
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 361,
+                                                    lineNumber: 429,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 356,
+                                            lineNumber: 424,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 354,
+                                    lineNumber: 422,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$skeleton$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Skeleton"], {
                                     className: "h-11 w-full rounded-md"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 368,
+                                    lineNumber: 436,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 341,
+                            lineNumber: 409,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -674,26 +731,26 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     className: "h-4 w-32 mx-auto"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 373,
+                                    lineNumber: 441,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$skeleton$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Skeleton"], {
                                     className: "h-4 w-24 mx-auto"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 374,
+                                    lineNumber: 442,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 372,
+                            lineNumber: 440,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                    lineNumber: 328,
+                    lineNumber: 396,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -703,13 +760,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                     children: "טוען טופס התחברות..."
                 }, void 0, false, {
                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                    lineNumber: 379,
+                    lineNumber: 447,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-            lineNumber: 314,
+            lineNumber: 382,
             columnNumber: 7
         }, this);
     }
@@ -733,7 +790,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     "aria-hidden": "true"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 392,
+                                    lineNumber: 460,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardTitle"], {
@@ -742,13 +799,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     children: "מחובר בהצלחה"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 393,
+                                    lineNumber: 461,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 391,
+                            lineNumber: 459,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardDescription"], {
@@ -758,13 +815,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 395,
+                            lineNumber: 463,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                    lineNumber: 390,
+                    lineNumber: 458,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -777,23 +834,23 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                             children: "עבור לדשבורד"
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 401,
+                            lineNumber: 469,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 400,
+                        lineNumber: 468,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                    lineNumber: 399,
+                    lineNumber: 467,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-            lineNumber: 389,
+            lineNumber: 457,
             columnNumber: 7
         }, this);
     }
@@ -816,12 +873,12 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                             "aria-hidden": "true"
                         }, void 0, false, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 412,
+                            lineNumber: 480,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 411,
+                        lineNumber: 479,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardTitle"], {
@@ -830,7 +887,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                         children: mode === "signin" ? "ברוכים השבים" : "הצטרפו אלינו"
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 414,
+                        lineNumber: 482,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardDescription"], {
@@ -839,13 +896,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                         children: mode === "signin" ? "התחברו לחשבון שלכם כדי להמשיך" : "צרו חשבון חדש והתחילו לחסוך זמן עם AI"
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 417,
+                        lineNumber: 485,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                lineNumber: 410,
+                lineNumber: 478,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -861,7 +918,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                 "aria-hidden": "true"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 429,
+                                lineNumber: 497,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AlertDescription"], {
@@ -869,13 +926,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                 children: success
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 430,
+                                lineNumber: 498,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 428,
+                        lineNumber: 496,
                         columnNumber: 11
                     }, this),
                     errors.general && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Alert"], {
@@ -892,14 +949,14 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     "aria-hidden": "true"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 441,
+                                    lineNumber: 509,
                                     columnNumber: 17
                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$539$2e$0_react$40$19$2e$1$2e$0$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$alert$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertCircle$3e$__["AlertCircle"], {
                                     className: "h-4 w-4 mt-0.5 flex-shrink-0",
                                     "aria-hidden": "true"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 443,
+                                    lineNumber: 511,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -910,7 +967,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             children: errors.general
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 446,
+                                            lineNumber: 514,
                                             columnNumber: 17
                                         }, this),
                                         retryState.canRetry && retryState.retryCount < 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -928,7 +985,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                         "aria-hidden": "true"
                                                     }, void 0, false, {
                                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                        lineNumber: 461,
+                                                        lineNumber: 529,
                                                         columnNumber: 23
                                                     }, this),
                                                     "נסו שוב",
@@ -942,18 +999,18 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                        lineNumber: 467,
+                                                        lineNumber: 535,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 453,
+                                                lineNumber: 521,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 452,
+                                            lineNumber: 520,
                                             columnNumber: 19
                                         }, this),
                                         retryState.retryCount >= 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -963,24 +1020,24 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             children: "הגעתם למספר הניסיונות המרבי. אנא פנו לתמיכה אם הבעיה נמשכת."
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 477,
+                                            lineNumber: 545,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 445,
+                                    lineNumber: 513,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                            lineNumber: 439,
+                            lineNumber: 507,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 438,
+                        lineNumber: 506,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -999,7 +1056,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         "aria-hidden": "true"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 497,
+                                        lineNumber: 565,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1008,7 +1065,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "מתחבר עם Google..."
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 498,
+                                        lineNumber: 566,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1016,13 +1073,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "מתחבר..."
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 499,
+                                        lineNumber: 567,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 496,
+                                lineNumber: 564,
                                 columnNumber: 13
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex items-center gap-3",
@@ -1039,7 +1096,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 d: "M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 504,
+                                                lineNumber: 572,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -1047,7 +1104,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 d: "M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 505,
+                                                lineNumber: 573,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -1055,7 +1112,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 d: "M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 506,
+                                                lineNumber: 574,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -1063,26 +1120,26 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 d: "M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 507,
+                                                lineNumber: 575,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 503,
+                                        lineNumber: 571,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "המשיכו עם Google"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 509,
+                                        lineNumber: 577,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 502,
+                                lineNumber: 570,
                                 columnNumber: 13
                             }, this),
                             (isLoading || isTransitionPending) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1092,18 +1149,18 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     className: "w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 516,
+                                    lineNumber: 584,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 515,
+                                lineNumber: 583,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 487,
+                        lineNumber: 555,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1115,12 +1172,12 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     className: "w-full"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 524,
+                                    lineNumber: 592,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 523,
+                                lineNumber: 591,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1130,18 +1187,18 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                     children: "או"
                                 }, void 0, false, {
                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                    lineNumber: 527,
+                                    lineNumber: 595,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 526,
+                                lineNumber: 594,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 522,
+                        lineNumber: 590,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1164,13 +1221,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 children: "*"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 538,
+                                                lineNumber: 606,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 536,
+                                        lineNumber: 604,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1181,7 +1238,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 541,
+                                                lineNumber: 609,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -1198,13 +1255,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-describedby": errors.name ? "name-error" : "name-hint"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 542,
+                                                lineNumber: 610,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 540,
+                                        lineNumber: 608,
                                         columnNumber: 15
                                     }, this),
                                     errors.name ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1217,14 +1274,14 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 562,
+                                                lineNumber: 630,
                                                 columnNumber: 19
                                             }, this),
                                             errors.name
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 561,
+                                        lineNumber: 629,
                                         columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         id: "name-hint",
@@ -1232,13 +1289,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "השם המלא שלכם לצורך הרשמה"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 566,
+                                        lineNumber: 634,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 535,
+                                lineNumber: 603,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1255,13 +1312,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 children: "*"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 575,
+                                                lineNumber: 643,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 573,
+                                        lineNumber: 641,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1272,7 +1329,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 578,
+                                                lineNumber: 646,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -1291,13 +1348,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 autoComplete: "email"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 579,
+                                                lineNumber: 647,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 577,
+                                        lineNumber: 645,
                                         columnNumber: 13
                                     }, this),
                                     errors.email ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1310,14 +1367,14 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 601,
+                                                lineNumber: 669,
                                                 columnNumber: 17
                                             }, this),
                                             errors.email
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 600,
+                                        lineNumber: 668,
                                         columnNumber: 15
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         id: "email-hint",
@@ -1325,13 +1382,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "כתובת האימייל שלכם לצורך התחברות"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 605,
+                                        lineNumber: 673,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 572,
+                                lineNumber: 640,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1348,13 +1405,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 children: "*"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 613,
+                                                lineNumber: 681,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 611,
+                                        lineNumber: 679,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1365,7 +1422,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 616,
+                                                lineNumber: 684,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -1384,7 +1441,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 autoComplete: mode === "signin" ? "current-password" : "new-password"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 617,
+                                                lineNumber: 685,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1401,25 +1458,25 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     "aria-hidden": "true"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 647,
+                                                    lineNumber: 715,
                                                     columnNumber: 19
                                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$539$2e$0_react$40$19$2e$1$2e$0$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__["Eye"], {
                                                     className: "h-4 w-4 text-muted-foreground",
                                                     "aria-hidden": "true"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 649,
+                                                    lineNumber: 717,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 636,
+                                                lineNumber: 704,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 615,
+                                        lineNumber: 683,
                                         columnNumber: 13
                                     }, this),
                                     errors.password ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1432,14 +1489,14 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                 "aria-hidden": "true"
                                             }, void 0, false, {
                                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                lineNumber: 655,
+                                                lineNumber: 723,
                                                 columnNumber: 17
                                             }, this),
                                             errors.password
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 654,
+                                        lineNumber: 722,
                                         columnNumber: 15
                                     }, this) : mode === "signup" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         id: "password-requirements",
@@ -1447,7 +1504,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "לפחות 6 תווים"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 659,
+                                        lineNumber: 727,
                                         columnNumber: 15
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         id: "password-hint",
@@ -1455,13 +1512,13 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                         children: "הסיסמה שלכם לצורך התחברות"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 663,
+                                        lineNumber: 731,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 610,
+                                lineNumber: 678,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1476,12 +1533,12 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             children: mode === "signin" ? "התחברות" : "הרשמה"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 678,
+                                            lineNumber: 746,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 674,
+                                        lineNumber: 742,
                                         columnNumber: 13
                                     }, this),
                                     (isLoading || isTransitionPending) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1494,7 +1551,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     "aria-hidden": "true"
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 685,
+                                                    lineNumber: 753,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1503,7 +1560,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     children: mode === "signin" ? "מתחבר..." : "נרשם..."
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 686,
+                                                    lineNumber: 754,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1511,18 +1568,18 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                                     children: mode === "signin" ? "מתחבר..." : "נרשם..."
                                                 }, void 0, false, {
                                                     fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                                    lineNumber: 689,
+                                                    lineNumber: 757,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 684,
+                                            lineNumber: 752,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 683,
+                                        lineNumber: 751,
                                         columnNumber: 15
                                     }, this),
                                     (isLoading || isTransitionPending) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1532,24 +1589,24 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                             className: "h-full bg-primary animate-pulse"
                                         }, void 0, false, {
                                             fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                            lineNumber: 699,
+                                            lineNumber: 767,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                        lineNumber: 698,
+                                        lineNumber: 766,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 668,
+                                lineNumber: 736,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 532,
+                        lineNumber: 600,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1563,7 +1620,7 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                 children: mode === "signin" ? "עדיין אין לכם חשבון?" : "כבר יש לכם חשבון?"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 707,
+                                lineNumber: 775,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$4$2e$6_$40$babel$2b$core$40$7$2e$28$2e$3_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$playwright$2b$test$40$1$2e$55$2e$0_react$2d$d_369d37965ae8cf0a48106bfbb0e6af64$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1582,25 +1639,25 @@ const ModernAuthForm = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$
                                 children: mode === "signin" ? "צרו חשבון חדש" : "התחברו לחשבון קיים"
                             }, void 0, false, {
                                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                                lineNumber: 710,
+                                lineNumber: 778,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                        lineNumber: 706,
+                        lineNumber: 774,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-                lineNumber: 425,
+                lineNumber: 493,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/apps/www/src/components/auth/modern-auth-form.tsx",
-        lineNumber: 409,
+        lineNumber: 477,
         columnNumber: 5
     }, this);
 });
