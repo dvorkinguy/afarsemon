@@ -81,3 +81,4 @@
 [{"name":"hot-reloader","duration":97,"timestamp":13197861738,"id":3,"tags":{"version":"15.4.6"},"startTime":1756977659952,"traceId":"e891ef5b655dc800"},{"name":"compile-path","duration":804630,"timestamp":13198045825,"id":4,"tags":{"trigger":"middleware"},"startTime":1756977660136,"traceId":"e891ef5b655dc800"}]
 [{"name":"next-dev","duration":1764657466,"timestamp":13194913606,"id":1,"tags":{},"startTime":1756977657004,"traceId":"e891ef5b655dc800"}]
 [{"name":"hot-reloader","duration":97,"timestamp":14965527105,"id":3,"tags":{"version":"15.4.6"},"startTime":1756979427617,"traceId":"7437b880be95e92b"},{"name":"compile-path","duration":758605,"timestamp":14965697560,"id":4,"tags":{"trigger":"middleware"},"startTime":1756979427787,"traceId":"7437b880be95e92b"}]
+[{"name":"next-dev","duration":2849208138,"timestamp":14962736100,"id":1,"tags":{},"startTime":1756979424826,"traceId":"7437b880be95e92b"}]
