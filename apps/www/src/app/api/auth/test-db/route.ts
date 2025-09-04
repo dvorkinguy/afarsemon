@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, postgresClient } from '@/lib/db';
 import { user } from '@/lib/schema';
-import { count, sql } from 'drizzle-orm';
+import { count } from 'drizzle-orm';
 
 /**
  * Test endpoint to verify database connection and Better Auth tables
@@ -28,8 +28,8 @@ export async function GET() {
     
     for (const tableName of tables) {
       try {
-        // This is a basic existence check - we try to count rows using proper Drizzle syntax
-        const result = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM "${tableName}"`));
+        // This is a basic existence check - we try to count rows using raw postgres client
+        const result = await postgresClient`SELECT COUNT(*) as count FROM ${postgresClient(tableName)}`;
         
         tableStatus[tableName] = {
           exists: true,

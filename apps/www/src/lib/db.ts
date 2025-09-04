@@ -39,3 +39,6 @@ const client = postgres(serverEnv.POSTGRES_URL, {
 });
 
 export const db = drizzle(client, { schema });
+
+// Export the raw client for direct queries when needed
+export { client as postgresClient };

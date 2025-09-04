@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { sql } from 'drizzle-orm';
+import { postgresClient } from '@/lib/db';
 import { headers } from 'next/headers';
 
 /**
@@ -52,16 +51,16 @@ export async function GET() {
     // 3. Check database connectivity
     const dbStatus = { connected: false, error: null as string | null, tables: {} as Record<string, unknown> };
     try {
-      // Simple connectivity test using proper Drizzle syntax
-      await db.execute(sql`SELECT 1 as test`);
+      // Simple connectivity test using raw postgres client
+      await postgresClient`SELECT 1 as test`;
       dbStatus.connected = true;
       
       // Check auth tables
       const tables = ['user', 'session', 'account', 'verification'];
       for (const table of tables) {
         try {
-          // Use dynamic SQL with proper escaping for table names
-          const countResult = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM "${table}"`));
+          // Use raw postgres client for table counts
+          const countResult = await postgresClient`SELECT COUNT(*) as count FROM ${postgresClient(table)}`;
           dbStatus.tables[table] = {
             exists: true,
             count: Number(countResult?.[0]?.count) || 0
