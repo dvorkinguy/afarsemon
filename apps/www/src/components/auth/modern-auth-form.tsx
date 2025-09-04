@@ -179,12 +179,44 @@ export const ModernAuthForm = React.memo(function ModernAuthForm() {
         setErrors({});
         resetRetryState();
         
+        console.log('=== Starting Google Sign In ===');
+        console.log('Mode:', mode);
+        console.log('Callback URL:', mode === "signup" ? "/onboarding" : "/dashboard");
+        console.log('Base URL:', process.env.NEXT_PUBLIC_BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+        
         await signIn.social({
           provider: "google",
           callbackURL: mode === "signup" ? "/onboarding" : "/dashboard",
         });
       } catch (error) {
-        console.error('Google sign-in error:', error);
+        console.error('=== Google Sign-In Error Details ===');
+        console.error('Raw error:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error constructor:', error?.constructor?.name);
+        
+        // Try to extract more error details
+        if (error && typeof error === 'object') {
+          console.error('Error keys:', Object.keys(error));
+          console.error('Error entries:', Object.entries(error));
+          
+          // Check for common error properties
+          const errorObj = error as Record<string, unknown>;
+          console.error('Error message:', errorObj.message);
+          console.error('Error cause:', errorObj.cause);
+          console.error('Error code:', errorObj.code);
+          console.error('Error status:', errorObj.status);
+          console.error('Error response:', errorObj.response);
+          console.error('Error data:', errorObj.data);
+          
+          // Try to stringify the error
+          try {
+            console.error('Stringified error:', JSON.stringify(error, null, 2));
+          } catch {
+            console.error('Could not stringify error');
+          }
+        }
+        
+        console.error('=== End Google Sign-In Error Details ===');
         
         const errorDetails = categorizeError(error);
         setErrors({ general: errorDetails.message });

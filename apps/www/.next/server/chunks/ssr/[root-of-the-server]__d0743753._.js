@@ -177,28 +177,85 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f
 ;
 ;
 // Client-side environment variables (automatically injected by Next.js from root .env.local)
-const baseURL = ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || "http://localhost:3000"; // Fixed default port to match Next.js dev server
+// In production, Next.js will use the environment variables from the deployment
+const baseURL = ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : "http://localhost:3000");
+// Debug logging for client-side configuration
+if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+;
 const authClient = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$better$2d$auth$40$1$2e$3$2e$4_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$better$2d$auth$2f$dist$2f$client$2f$react$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createAuthClient"])({
     baseURL,
     fetchOptions: {
         onError: (context)=>{
-            console.error("Auth Client Error:", context.error);
-            console.error("Request context:", context);
+            // Enhanced error logging to capture all details
+            console.error("=== Auth Client Error Details ===");
+            // Try to extract error details from different sources
+            const error = context.error;
+            // Log the raw error object
+            console.error("Raw error object:", error);
+            // Check if error has properties that aren't being serialized
+            if (error && typeof error === 'object') {
+                console.error("Error type:", error.constructor.name);
+                console.error("Error properties:", Object.keys(error));
+                console.error("Error entries:", Object.entries(error));
+                // Try to stringify with a replacer to catch circular references
+                try {
+                    console.error("Stringified error:", JSON.stringify(error, (key, value)=>{
+                        if (key && typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    }));
+                } catch (e) {
+                    console.error("Could not stringify error:", e);
+                }
+            }
+            // Log the full context object
+            console.error("Full request context:", {
+                error: context.error,
+                response: context.response,
+                responseHeaders: context.response?.headers,
+                responseStatus: context.response?.status,
+                responseStatusText: context.response?.statusText,
+                // Log the entire context as-is to see all available properties
+                fullContext: context
+            });
+            // Try to get error message from different sources
+            let errorMessage = "Unknown error";
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            } else if (error && typeof error === 'object' && 'message' in error) {
+                errorMessage = String(error.message);
+            }
+            console.error("Extracted error message:", errorMessage);
+            console.error("=== End Auth Client Error Details ===");
         },
-        onRequest: (_context)=>{
-            // Add debugging for all auth requests
+        onRequest: (context)=>{
+            // Enhanced request logging
             if ("TURBOPACK compile-time truthy", 1) {
-                console.log("Auth Request initiated");
+                console.log("=== Auth Request Details ===");
+                console.log("URL:", context.url);
+                console.log("Full context:", context);
+                console.log("=== End Auth Request Details ===");
             }
         },
         onSuccess: (context)=>{
-            // Log successful responses in development
+            // Enhanced success logging
             if ("TURBOPACK compile-time truthy", 1) {
-                console.log("Auth Success", context.response.status);
+                console.log("=== Auth Success Details ===");
+                console.log("Status:", context.response.status);
+                console.log("Response data:", context.data);
+                console.log("=== End Auth Success Details ===");
             }
         }
     }
 });
+// Create a Set to track circular references
+const seen = new WeakSet();
 const { signIn, signOut, signUp, useSession, getSession } = authClient;
 }),
 "[project]/apps/www/src/lib/utils.ts [app-ssr] (ecmascript)": ((__turbopack_context__) => {

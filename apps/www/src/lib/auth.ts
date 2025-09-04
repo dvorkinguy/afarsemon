@@ -7,6 +7,20 @@ import { getServerEnv } from "@afarsemon/env"
 
 const serverEnv = getServerEnv();
 
+// Add debug logging for configuration
+const resolvedBaseURL = serverEnv.BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+console.log('[Auth Config] Initializing Better Auth with:', {
+  baseURL: resolvedBaseURL,
+  hasGoogleClientId: !!serverEnv.GOOGLE_CLIENT_ID,
+  hasGoogleClientSecret: !!serverEnv.GOOGLE_CLIENT_SECRET,
+  hasBetterAuthSecret: !!serverEnv.BETTER_AUTH_SECRET,
+  hasPostgresUrl: !!serverEnv.POSTGRES_URL,
+  environment: process.env.NODE_ENV,
+  betterAuthUrl: serverEnv.BETTER_AUTH_URL,
+  publicBetterAuthUrl: serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL,
+  publicAppUrl: serverEnv.NEXT_PUBLIC_APP_URL
+});
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -14,7 +28,8 @@ export const auth = betterAuth({
       ...schema,
     },
   }),
-  baseURL: serverEnv.BETTER_AUTH_URL || serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: resolvedBaseURL,
+  secret: serverEnv.BETTER_AUTH_SECRET, // Explicitly set the secret
   socialProviders: {
     google: {
       clientId: serverEnv.GOOGLE_CLIENT_ID,
@@ -69,7 +84,13 @@ export const auth = betterAuth({
       maxAge: 60 * 5 // Cache for 5 minutes
     }
   },
-  trustedOrigins: serverEnv.NEXT_PUBLIC_APP_URL ? [serverEnv.NEXT_PUBLIC_APP_URL] : ["http://localhost:3000"],
+  trustedOrigins: [
+    serverEnv.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    serverEnv.BETTER_AUTH_URL || "http://localhost:3000",
+    serverEnv.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+    "https://afarsemon.com",
+    "http://localhost:3000"
+  ].filter((url, index, self) => self.indexOf(url) === index), // Remove duplicates
   plugins: [
     nextCookies(), // Must be the last plugin for Next.js cookie handling
   ],

@@ -1,17 +1,10 @@
 [
   {
-    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!api\\/auth|_next\\/static|_next\\/image|favicon.ico|sitemap.xml|robots.txt).*))(\\\\.json)?[\\/#\\?]?$",
-    "missing": [
-      {
-        "type": "header",
-        "key": "next-router-prefetch"
-      },
-      {
-        "type": "header",
-        "key": "purpose",
-        "value": "prefetch"
-      }
-    ],
-    "originalSource": "/((?!api/auth|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\\\.json)?[\\/#\\?]?$",
+    "originalSource": "/api/:path*"
+  },
+  {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico).*))(\\\\.json)?[\\/#\\?]?$",
+    "originalSource": "/((?!_next/static|_next/image|favicon.ico).*)"
   }
 ]
