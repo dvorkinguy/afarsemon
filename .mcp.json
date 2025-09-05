@@ -2,43 +2,20 @@
   "mcpServers": {
     "shadcn": {
       "command": "npx",
-      "args": ["shadcn@latest", "mcp"]
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem@latest", "/home/gi/Documents/1_Projects/afarsemon"]
-    },
-    "playwright-official": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"]
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github@latest"]
-    },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
-    },
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "figma-developer-mcp", "--stdio"],
+      "args": [
+        "@modelcontextprotocol/server-filesystem@latest",
+        "/home/gi/Documents/1_Projects/afarsemon/afarsemon/apps/www/src",
+        "/home/gi/Documents/1_Projects/afarsemon/afarsemon/packages"
+      ],
       "env": {
-        "FIGMA_API_KEY": "${FIGMA_API_KEY}"
-      }
-    },
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"]
-    },
-    "n8n-mcp": {
-      "command": "npx",
-      "args": ["n8n-mcp"]
-    },
-    "apify": {
-      "transport": {
-        "type": "sse",
-        "url": "https://mcp.apify.com"
+        "MCP_FILESYSTEM_READ_ONLY": "false"
       }
     }
   }

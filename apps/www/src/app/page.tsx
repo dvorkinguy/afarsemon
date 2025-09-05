@@ -3,6 +3,7 @@ import { ArrowLeft, Bot, Zap, Sparkles, Users, BarChart, Shield, Globe } from "l
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BookingCalendar } from "@/components/booking-calendar";
 
 export default function HomePage() {
   return (
@@ -168,6 +169,17 @@ export default function HomePage() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Booking Calendar Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-center mb-2">קבעו פגישת ייעוץ חינם</h2>
+          <p className="text-xl text-muted-foreground text-center mb-8">
+            שוחחו עם המומחים שלנו וגלו כיצד AI יכול לשנות את העסק שלכם
+          </p>
+          <div className="max-w-5xl mx-auto">
+            <BookingCalendar />
+          </div>
         </div>
 
         {/* CTA Section */}

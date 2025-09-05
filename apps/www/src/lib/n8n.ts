@@ -38,7 +38,7 @@ class N8NClient {
     return response.json();
   }
 
-  async executeWorkflow(id: string, data?: any) {
+  async executeWorkflow(id: string, data?: Record<string, unknown>) {
     const response = await fetch(`${this.config.apiUrl}/workflows/${id}/execute`, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -63,7 +63,7 @@ class N8NClient {
     return response.json();
   }
 
-  async triggerWebhook(webhookPath: string, data: any, isTest = false) {
+  async triggerWebhook(webhookPath: string, data: Record<string, unknown>, isTest = false) {
     const baseUrl = isTest ? this.config.webhookTestUrl : this.config.webhookUrl;
     const response = await fetch(`${baseUrl}/${webhookPath}`, {
       method: 'POST',

@@ -347,7 +347,8 @@ const getClientEnv = ()=>{
 "use strict";
 
 __turbopack_context__.s({
-    "db": ()=>db
+    "db": ()=>db,
+    "postgresClient": ()=>client
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$drizzle$2d$orm$40$0$2e$44$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$types$2b$pg$40$8$2e$15$2e$5_kysely$40$0$2e$28$2e$5_pg$40$8$2e$16$2e$3_postgres$40$3$2e$4$2e$7$2f$node_modules$2f$drizzle$2d$orm$2f$postgres$2d$js$2f$driver$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/drizzle-orm@0.44.4_@opentelemetry+api@1.9.0_@types+pg@8.15.5_kysely@0.28.5_pg@8.16.3_postgres@3.4.7/node_modules/drizzle-orm/postgres-js/driver.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$postgres$40$3$2e$4$2e$7$2f$node_modules$2f$postgres$2f$src$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/postgres@3.4.7/node_modules/postgres/src/index.js [app-route] (ecmascript)");
@@ -358,10 +359,35 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$packages$2f$env$2f$src$2f$in
 ;
 ;
 const serverEnv = (0, __TURBOPACK__imported__module__$5b$project$5d2f$packages$2f$env$2f$src$2f$index$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getServerEnv"])();
-const client = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$postgres$40$3$2e$4$2e$7$2f$node_modules$2f$postgres$2f$src$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"])(serverEnv.POSTGRES_URL);
+// Optimized PostgreSQL client configuration for Vercel serverless environment
+const client = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$postgres$40$3$2e$4$2e$7$2f$node_modules$2f$postgres$2f$src$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"])(serverEnv.POSTGRES_URL, {
+    // SSL configuration for production
+    ssl: ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : false,
+    // Serverless-optimized connection pool settings
+    max: 1,
+    idle_timeout: 0,
+    connect_timeout: 30,
+    // Connection lifecycle for serverless
+    max_lifetime: 0,
+    prepare: false,
+    // Transform configuration for production environments
+    transform: ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : undefined,
+    // Error handling and debugging
+    onnotice: ("TURBOPACK compile-time truthy", 1) ? console.log : "TURBOPACK unreachable",
+    debug: ("TURBOPACK compile-time value", "development") === 'development',
+    // Additional production settings
+    connection: {
+        application_name: 'afarsemon-app',
+        // Enable keep-alive for production connections
+        ...("TURBOPACK compile-time value", "development") === 'production' && {
+            options: '--search_path=public'
+        }
+    }
+});
 const db = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$drizzle$2d$orm$40$0$2e$44$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_$40$types$2b$pg$40$8$2e$15$2e$5_kysely$40$0$2e$28$2e$5_pg$40$8$2e$16$2e$3_postgres$40$3$2e$4$2e$7$2f$node_modules$2f$drizzle$2d$orm$2f$postgres$2d$js$2f$driver$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["drizzle"])(client, {
     schema: __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$www$2f$src$2f$lib$2f$schema$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__
 });
+;
 }),
 "[project]/apps/www/src/lib/production-env.ts [app-route] (ecmascript)": ((__turbopack_context__) => {
 "use strict";
