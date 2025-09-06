@@ -46,7 +46,7 @@ The only things to preserve are:
 - TypeScript
 - Tailwind CSS
 - Better Auth for authentication
-- Drizzle ORM + PostgreSQL
+- Supabese already connected
 - Vercel AI SDK
 - shadcn/ui components
 - Lucide React icons
