@@ -1,0 +1,3 @@
+{
+  "/api/n8n/webhook/route": "app/api/n8n/webhook/route.js"
+}

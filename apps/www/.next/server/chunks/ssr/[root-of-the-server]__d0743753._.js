@@ -70,7 +70,7 @@ module.exports = mod;
 function validateAuthConfiguration() {
     const checks = [];
     // Client-side environment variables
-    const nextPublicBetterAuthUrl = ("TURBOPACK compile-time value", "http://localhost:3000");
+    const nextPublicBetterAuthUrl = ("TURBOPACK compile-time value", "http://localhost:3002");
     checks.push({
         name: 'NEXT_PUBLIC_BETTER_AUTH_URL',
         value: nextPublicBetterAuthUrl,
@@ -78,7 +78,7 @@ function validateAuthConfiguration() {
         valid: !nextPublicBetterAuthUrl || isValidUrl(nextPublicBetterAuthUrl),
         message: ("TURBOPACK compile-time truthy", 1) ? isValidUrl(nextPublicBetterAuthUrl) ? 'Valid URL format' : 'Invalid URL format' : "TURBOPACK unreachable"
     });
-    const nextPublicAppUrl = ("TURBOPACK compile-time value", "http://localhost:3000");
+    const nextPublicAppUrl = ("TURBOPACK compile-time value", "http://localhost:3002");
     checks.push({
         name: 'NEXT_PUBLIC_APP_URL',
         value: nextPublicAppUrl,
@@ -109,7 +109,7 @@ function getEffectiveBaseUrl() {
     // Use production-first URL resolution logic matching auth-client.ts
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
-    return ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : "http://localhost:3000");
+    return ("TURBOPACK compile-time value", "http://localhost:3002") || ("TURBOPACK compile-time value", "http://localhost:3002") || (("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : "http://localhost:3000");
 }
 async function testAuthEndpoints(baseUrl = getEffectiveBaseUrl()) {
     const endpoints = [
@@ -193,7 +193,7 @@ const getBaseURL = ()=>{
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
     // In development, prioritize localhost
-    return ("TURBOPACK compile-time value", "http://localhost:3000") || ("TURBOPACK compile-time value", "http://localhost:3000") || (("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : "http://localhost:3000");
+    return ("TURBOPACK compile-time value", "http://localhost:3002") || ("TURBOPACK compile-time value", "http://localhost:3002") || (("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : "http://localhost:3000");
 };
 const baseURL = getBaseURL();
 // Create a Set to track circular references

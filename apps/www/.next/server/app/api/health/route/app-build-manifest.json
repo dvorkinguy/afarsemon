@@ -1,0 +1,15 @@
+{
+  "pages": {
+    "/api/health/route": [
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_a387d055._.js",
+      "static/chunks/c29df_next_dist_compiled_react-dom_98df9a70._.js",
+      "static/chunks/c29df_next_dist_compiled_next-devtools_index_d22f025c.js",
+      "static/chunks/c29df_next_dist_compiled_77f21b8f._.js",
+      "static/chunks/c29df_next_dist_client_d76e3c4c._.js",
+      "static/chunks/c29df_next_dist_f0a722c6._.js",
+      "static/chunks/61dca_@swc_helpers_cjs_28edb73c._.js",
+      "static/chunks/apps_www_e69f0d32._.js",
+      "static/chunks/apps_www_66a00a4a._.js"
+    ]
+  }
+}

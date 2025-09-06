@@ -8,34 +8,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Bot, 
   Zap, 
-  BarChart, 
+  BarChart3, 
   ArrowRight,
   Sparkles, 
   Clock,
   CheckCircle,
-  Users
+  Users,
+  HeadphonesIcon,
+  TrendingUp
 } from "lucide-react";
 import { useDiagnostics } from "@/hooks/use-diagnostics";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const { isAiReady, loading: diagnosticsLoading } = useDiagnostics();
-  const router = useRouter();
-
-  // Redirect to auth if not authenticated
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/auth");
-    }
-  }, [session, isPending, router]);
 
   // Loading state
   if (isPending) {
     return (
-      <div className="container mx-auto p-6 space-y-8" dir="rtl" role="status" aria-label="טוען דשבורד">
+      <div className="p-6 space-y-8" dir="rtl" role="status" aria-label="טוען דשבורד">
         <div className="flex justify-between items-center">
           <div className="space-y-2">
             <Skeleton className="h-8 w-32" />
@@ -63,7 +55,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Not authenticated - will redirect
+  // Not authenticated - handled by layout
   if (!session) {
     return null;
   }
@@ -71,23 +63,15 @@ export default function DashboardPage() {
   const firstName = session.user?.name?.split(" ")[0] || "משתמש";
 
   return (
-    <div className="container mx-auto p-6 space-y-8" dir="rtl" role="main">
+    <div className="p-6 space-y-6" dir="rtl" role="main">
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4" role="banner">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <span>שלום {firstName}! <span aria-hidden="true">👋</span></span>
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            ברוכים השבים לדשבורד של אפרסמון. הכול מוכן לפעולה!
-          </p>
-        </div>
-        <Button asChild className="group">
-          <Link href="/onboarding" className="flex items-center gap-2" aria-label="התחל מדמו של המערכת">
-            התחל מהדמה
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-          </Link>
-        </Button>
+      <header className="space-y-2" role="banner">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <span>שלום {firstName}! <span aria-hidden="true">👋</span></span>
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          ברוכים השבים לדשבורד של אפרסמון. הכול מוכן לפעולה!
+        </p>
       </header>
 
       {/* Stats Cards */}
@@ -138,6 +122,75 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Quick Access Navigation */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" role="region" aria-labelledby="quick-nav-title">
+        <h2 id="quick-nav-title" className="sr-only">גישה מהירה למקטעים</h2>
+        
+        <Link href="/dashboard/ai-automation">
+          <Card className="group hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                  <Bot className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">פלטפורמת AI</CardTitle>
+                  <CardDescription className="text-xs">בינה מלאכותית ואוטומציה</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/customer-service">
+          <Card className="group hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                  <HeadphonesIcon className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">שירות לקוחות</CardTitle>
+                  <CardDescription className="text-xs">ניהול תמיכה ופניות</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/sales-marketing">
+          <Card className="group hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                  <TrendingUp className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">מכירות ושיווק</CardTitle>
+                  <CardDescription className="text-xs">ליידים וקמפיינים</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/business-intelligence">
+          <Card className="group hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                  <BarChart3 className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">מודיעין עסקי</CardTitle>
+                  <CardDescription className="text-xs">ניתוח נתונים ותובנות</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
       </section>
 
       {/* Main Content */}
@@ -239,7 +292,7 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <BarChart className="h-6 w-6 text-blue-600" />
+                <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <CardTitle>ניתוח נתונים</CardTitle>

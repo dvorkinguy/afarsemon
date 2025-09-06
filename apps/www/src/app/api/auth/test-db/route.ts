@@ -1,26 +1,44 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { db, postgresClient } from '@/lib/db';
 import { user } from '@/lib/schema';
 import { count } from 'drizzle-orm';
+import { 
+  validateRequest, 
+  createSecureResponse, 
+  createErrorResponse,
+  requireDevelopment
+} from '@/lib/security';
 
 /**
  * Test endpoint to verify database connection and Better Auth tables
  * GET /api/auth/test-db
+ * 
+ * SECURITY: Only available in development environment
  */
-export async function GET() {
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ 
-      error: 'This endpoint is only available in development' 
-    }, { status: 403 });
+export async function GET(request: NextRequest) {
+  // Check if development environment
+  const devCheck = requireDevelopment();
+  if (!devCheck.success) {
+    return createErrorResponse(devCheck.error || 'Not found', 404);
+  }
+
+  // Apply security validation with strict rate limiting for debug endpoints
+  const validation = await validateRequest(request, {
+    rateLimitType: 'debug', // 3 requests per minute
+    allowedMethods: ['GET'],
+  });
+
+  if (!validation.success) {
+    return validation.response!;
   }
 
   try {
-    console.log('Testing database connection...');
+    console.log('[Debug] Testing database connection...');
     
     // Test basic database connection
     const userCount = await db.select({ count: count() }).from(user);
     
-    console.log('Database connection successful. User count:', userCount[0]?.count || 0);
+    console.log('[Debug] Database connection successful. User count:', userCount[0]?.count || 0);
     
     // Test if we can query the auth tables
     const tables = ['user', 'session', 'account', 'verification'];
@@ -43,21 +61,22 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
+    return createSecureResponse({
       success: true,
       message: 'Database connection successful',
       userCount: userCount[0]?.count || 0,
       tables: tableStatus,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      environment: 'development'
     });
 
   } catch (error) {
-    console.error('Database connection test failed:', error);
+    console.error('[Debug] Database connection test failed:', error);
     
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown database error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    return createErrorResponse(
+      'Database connection test failed',
+      500,
+      error
+    );
   }
 }

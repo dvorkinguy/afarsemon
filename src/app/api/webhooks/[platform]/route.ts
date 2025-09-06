@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
+import { rateLimiters, getClientIdentifier, checkRateLimit } from '@/lib/rate-limit'
+import { uuidSchema, webhookPlatformSchema, safeParseJSON, sanitizeErrorMessage } from '@/lib/validation'
 
 // Supported platforms
 type Platform = 'n8n' | 'make' | 'zapier' | 'custom'
@@ -13,7 +15,10 @@ function verifyWebhookSignature(
   signature: string | null,
   secret: string
 ): boolean {
-  if (!signature) return false
+  // SECURITY FIX: Signature is REQUIRED when secret is configured
+  if (!signature) {
+    throw new Error('Webhook signature is required when secret key is configured');
+  }
   
   const expectedSignature = crypto
     .createHmac('sha256', secret)
@@ -52,17 +57,35 @@ async function handleWebhook(
       throw new Error('Webhook configuration not found or inactive')
     }
 
-    // Verify signature if secret is provided
+    // SECURITY FIX: Verify signature if secret is provided
     const signature = headers.get('x-webhook-signature') || 
                      headers.get('x-hub-signature-256') ||
                      headers.get('x-signature')
     
-    if (config.secret_key && !verifyWebhookSignature(
-      JSON.stringify(payload),
-      signature,
-      config.secret_key
-    )) {
-      throw new Error('Invalid webhook signature')
+    if (config.secret_key) {
+      // When secret is configured, signature verification is mandatory
+      try {
+        const isValid = verifyWebhookSignature(
+          JSON.stringify(payload),
+          signature,
+          config.secret_key
+        )
+        if (!isValid) {
+          throw new Error('Invalid webhook signature')
+        }
+      } catch (error) {
+        // Log the signature verification failure
+        await supabase
+          .from('webhook_logs')
+          .insert({
+            webhook_config_id: configId,
+            event_type: 'signature_verification_failed',
+            payload: { error: error instanceof Error ? error.message : 'Signature verification failed' },
+            response_status: 401,
+            execution_time_ms: Date.now() - startTime
+          })
+        throw new Error('Webhook signature verification failed')
+      }
     }
 
     // Process based on platform
@@ -206,28 +229,61 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { platform: string } }
 ) {
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  
   try {
-    const platform = params.platform as Platform
-    const configId = request.nextUrl.searchParams.get('config_id')
+    // Rate limiting
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = await checkRateLimit(rateLimiters.webhook, clientId)
     
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
+            'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset || 0).toISOString(),
+          }
+        }
+      )
+    }
+    
+    // Validate platform parameter
+    const platformResult = webhookPlatformSchema.safeParse(params.platform)
+    if (!platformResult.success) {
+      return NextResponse.json(
+        { error: platformResult.error.errors[0].message },
+        { status: 400 }
+      )
+    }
+    const platform = platformResult.data as Platform
+    
+    // Validate config_id parameter (UUID validation to prevent SQL injection)
+    const configId = request.nextUrl.searchParams.get('config_id')
     if (!configId) {
       return NextResponse.json(
         { error: 'Missing config_id parameter' },
         { status: 400 }
       )
     }
-
-    if (!['n8n', 'make', 'zapier', 'custom'].includes(platform)) {
+    
+    // SECURITY FIX: Validate UUID format to prevent SQL injection
+    const configIdResult = uuidSchema.safeParse(configId)
+    if (!configIdResult.success) {
       return NextResponse.json(
-        { error: 'Invalid platform' },
+        { error: 'Invalid config_id format. Must be a valid UUID.' },
         { status: 400 }
       )
     }
 
-    const payload = await request.json()
+    // Parse and validate JSON payload with size limits
+    const payload = await safeParseJSON(request)
+    
     const result = await handleWebhook(
       platform,
-      configId,
+      configIdResult.data,
       payload,
       request.headers
     )
@@ -238,13 +294,32 @@ export async function POST(
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Webhook error:', error)
+    // Improved error handling
+    const errorMessage = sanitizeErrorMessage(error, isDevelopment)
+    
+    // Log error in development
+    if (isDevelopment) {
+      console.error('Webhook error:', error)
+    }
+    
+    // Determine appropriate status code
+    let statusCode = 500
+    if (error instanceof Error) {
+      if (error.message.includes('Unauthorized') || error.message.includes('signature')) {
+        statusCode = 401
+      } else if (error.message.includes('not found')) {
+        statusCode = 404
+      } else if (error.message.includes('Invalid') || error.message.includes('Payload too large')) {
+        statusCode = 400
+      }
+    }
+    
     return NextResponse.json(
       { 
-        error: error instanceof Error ? error.message : 'Webhook processing failed',
+        error: errorMessage,
         timestamp: new Date().toISOString()
       },
-      { status: 500 }
+      { status: statusCode }
     )
   }
 }
@@ -257,13 +332,51 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { platform: string } }
 ) {
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  
   try {
-    const platform = params.platform as Platform
-    const configId = request.nextUrl.searchParams.get('config_id')
+    // Rate limiting
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = await checkRateLimit(rateLimiters.api, clientId)
     
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
+            'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset || 0).toISOString(),
+          }
+        }
+      )
+    }
+    
+    // Validate platform parameter
+    const platformResult = webhookPlatformSchema.safeParse(params.platform)
+    if (!platformResult.success) {
+      return NextResponse.json(
+        { error: platformResult.error.errors[0].message },
+        { status: 400 }
+      )
+    }
+    const platform = platformResult.data as Platform
+    
+    // Validate config_id parameter
+    const configId = request.nextUrl.searchParams.get('config_id')
     if (!configId) {
       return NextResponse.json(
         { error: 'Missing config_id parameter' },
+        { status: 400 }
+      )
+    }
+    
+    // SECURITY FIX: Validate UUID format
+    const configIdResult = uuidSchema.safeParse(configId)
+    if (!configIdResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid config_id format. Must be a valid UUID.' },
         { status: 400 }
       )
     }
@@ -273,7 +386,7 @@ export async function GET(
     const { data: config, error } = await supabase
       .from('webhook_configs')
       .select('*')
-      .eq('id', configId)
+      .eq('id', configIdResult.data)
       .eq('platform', platform)
       .single()
 
@@ -340,9 +453,15 @@ export async function GET(
       instructions
     })
   } catch (error) {
-    console.error('Error fetching webhook config:', error)
+    // Improved error handling
+    const errorMessage = sanitizeErrorMessage(error, isDevelopment)
+    
+    if (isDevelopment) {
+      console.error('Error fetching webhook config:', error)
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to fetch webhook configuration' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

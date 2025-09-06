@@ -3,16 +3,29 @@
   "middleware": {
     "/": {
       "files": [
-        "server/edge/chunks/_e7eca563._.js",
-        "server/edge/chunks/[root-of-the-server]__4f4b02d6._.js",
-        "server/edge/chunks/apps_www_edge-wrapper_85f7e957.js"
+        "server/edge/chunks/_d681a4e7._.js",
+        "server/edge/chunks/8e59f_@opentelemetry_api_build_esm_68b4ebff._.js",
+        "server/edge/chunks/7fbd0_zod_v4_4e093acb._.js",
+        "server/edge/chunks/9649a_better-auth_dist_3c451fad._.js",
+        "server/edge/chunks/990b6_jose_dist_browser_b006e9c3._.js",
+        "server/edge/chunks/1d2cd_kysely_dist_esm_operation-node_0faf9a27._.js",
+        "server/edge/chunks/1d2cd_kysely_dist_esm_query-builder_97f8ce82._.js",
+        "server/edge/chunks/1d2cd_kysely_dist_esm_parser_c6ee349a._.js",
+        "server/edge/chunks/1d2cd_kysely_dist_esm_schema_cbf30b2d._.js",
+        "server/edge/chunks/1d2cd_kysely_dist_esm_6e1b0d56._.js",
+        "server/edge/chunks/3bae0_drizzle-orm_a0d64a62._.js",
+        "server/edge/chunks/e3829_postgres_src_30e0ec5e._.js",
+        "server/edge/chunks/95ce8_@upstash_redis_2ff8d852._.js",
+        "server/edge/chunks/node_modules__pnpm_11a19286._.js",
+        "server/edge/chunks/[root-of-the-server]__3cf3bcb0._.js",
+        "server/edge/chunks/apps_www_edge-wrapper_d85db102.js"
       ],
       "name": "middleware",
       "page": "/",
       "matchers": [
         {
-          "regexp": "/:nextData(_next/data/[^/]{1,})?/((?!_next/static|_next/image|favicon.ico).*){(\\\\.json)}?",
-          "originalSource": "/((?!_next/static|_next/image|favicon.ico).*)"
+          "regexp": "/:nextData(_next/data/[^/]{1,})?/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*){(\\\\.json)}?",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"
         }
       ],
       "wasm": [],
@@ -20,9 +33,9 @@
       "env": {
         "__NEXT_BUILD_ID": "development",
         "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "LQ62PxAJz12Xgv3FL+ePpb18CBcy9qOO6z2LQ2+wG2U=",
-        "__NEXT_PREVIEW_MODE_ID": "c3ddde7b32c96ab9fce81822adcbcdb9",
-        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "f02c22d5e6b504b8cb771c4436edf7f88060bafa8cfa7d28ecc65f029467de68",
-        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "df91657a363b687cc092ccc705b40ac6cfca6af0031155a603898964d9005b94"
+        "__NEXT_PREVIEW_MODE_ID": "e9e378a49b631b375345c96b515df37a",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "dff7aefd07dfd860529531e6d22d97366b551a1b63afa66e47f8981ab4e475e4",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "3704418aa9d0a4af41f7043637a03cd42b4060d816e0d7a11c3832bce01319dd"
       }
     }
   },

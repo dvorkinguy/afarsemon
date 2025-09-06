@@ -1,24 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { postgresClient } from '@/lib/db';
 import { headers } from 'next/headers';
+import { 
+  validateRequest, 
+  createSecureResponse, 
+  createErrorResponse
+} from '@/lib/security';
 
 /**
  * Comprehensive authentication debug endpoint
  * GET /api/auth/debug
  * 
- * This endpoint provides detailed information about:
- * - Environment configuration
- * - Database connectivity
- * - Auth handler availability
- * - Session state
- * - CORS and security headers
+ * SECURITY: Requires admin authentication in production
+ * Available in development without auth, but with rate limiting
  */
-export async function GET() {
-  // Allow in production for debugging, but with limited info
+export async function GET(request: NextRequest) {
+  // In production, require admin authentication
+  // In development, allow but with strict rate limiting
+  const validation = await validateRequest(request, {
+    requireAdmin: process.env.NODE_ENV === 'production',
+    rateLimitType: 'debug', // 3 requests per minute
+    allowedMethods: ['GET'],
+  });
+
+  if (!validation.success) {
+    return validation.response!;
+  }
+
   const debugInfo: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
+    requestedBy: validation.user?.email || 'anonymous',
   };
 
   try {
@@ -38,6 +51,10 @@ export async function GET() {
       
       // Database (check existence only)
       POSTGRES_URL: process.env.POSTGRES_URL ? 'SET' : 'NOT_SET',
+      
+      // Rate limiting
+      UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ? 'SET' : 'NOT_SET',
+      UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ? 'SET' : 'NOT_SET',
     };
     
     debugInfo.environment_variables = envCheck;
@@ -48,29 +65,32 @@ export async function GET() {
                             'http://localhost:3000';
     debugInfo.effective_base_url = effectiveBaseUrl;
     
-    // 3. Check database connectivity
+    // 3. Check database connectivity (limited info in production)
     const dbStatus = { connected: false, error: null as string | null, tables: {} as Record<string, unknown> };
     try {
       // Simple connectivity test using raw postgres client
       await postgresClient`SELECT 1 as test`;
       dbStatus.connected = true;
       
-      // Check auth tables
-      const tables = ['user', 'session', 'account', 'verification'];
-      for (const table of tables) {
-        try {
-          // Use raw postgres client for table counts
-          const countResult = await postgresClient`SELECT COUNT(*) as count FROM ${postgresClient(table)}`;
-          dbStatus.tables[table] = {
-            exists: true,
-            count: Number(countResult?.[0]?.count) || 0
-          };
-        } catch (e) {
-          dbStatus.tables[table] = {
-            exists: false,
-            error: e instanceof Error ? e.message : 'Unknown error'
-          };
+      // Only show table info in development
+      if (process.env.NODE_ENV === 'development') {
+        const tables = ['user', 'session', 'account', 'verification'];
+        for (const table of tables) {
+          try {
+            const countResult = await postgresClient`SELECT COUNT(*) as count FROM ${postgresClient(table)}`;
+            dbStatus.tables[table] = {
+              exists: true,
+              count: Number(countResult?.[0]?.count) || 0
+            };
+          } catch (e) {
+            dbStatus.tables[table] = {
+              exists: false,
+              error: e instanceof Error ? e.message : 'Unknown error'
+            };
+          }
         }
+      } else {
+        dbStatus.tables = { note: 'Table details hidden in production' };
       }
     } catch (error) {
       dbStatus.connected = false;
@@ -84,16 +104,18 @@ export async function GET() {
       if (auth && auth.handler) {
         authHandlerStatus.available = true;
         
-        // Check if handler has expected methods
-        const handlerMethods = auth.handler ? Object.keys(auth.handler) : [];
-        debugInfo.auth_handler_methods = handlerMethods;
+        // Only show handler methods in development
+        if (process.env.NODE_ENV === 'development') {
+          const handlerMethods = auth.handler ? Object.keys(auth.handler) : [];
+          debugInfo.auth_handler_methods = handlerMethods;
+        }
       }
     } catch (error) {
       authHandlerStatus.error = error instanceof Error ? error.message : 'Unknown error';
     }
     debugInfo.auth_handler = authHandlerStatus;
     
-    // 5. Check session (if available)
+    // 5. Check current session
     const sessionStatus = { 
       checked: false, 
       session: null as { user: unknown; expiresAt: unknown } | null, 
@@ -104,7 +126,11 @@ export async function GET() {
       const session = await auth.api.getSession({ headers: requestHeaders });
       sessionStatus.checked = true;
       sessionStatus.session = session ? {
-        user: session.user,
+        user: {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+        },
         expiresAt: session.session.expiresAt
       } : null;
     } catch (error) {
@@ -112,62 +138,7 @@ export async function GET() {
     }
     debugInfo.session = sessionStatus;
     
-    // 6. Check request headers
-    const requestHeaders = await headers();
-    const relevantHeaders = {
-      'content-type': requestHeaders.get('content-type'),
-      'accept': requestHeaders.get('accept'),
-      'origin': requestHeaders.get('origin'),
-      'referer': requestHeaders.get('referer'),
-      'cookie': requestHeaders.get('cookie') ? 'PRESENT' : 'NOT_PRESENT',
-      'x-forwarded-proto': requestHeaders.get('x-forwarded-proto'),
-      'x-forwarded-host': requestHeaders.get('x-forwarded-host'),
-    };
-    debugInfo.request_headers = relevantHeaders;
-    
-    // 7. Test auth endpoints
-    const authEndpoints = [
-      '/api/auth/session',
-      '/api/auth/sign-in',
-      '/api/auth/sign-up',
-      '/api/auth/sign-out',
-      '/api/auth/callback/google',
-    ];
-    
-    const endpointTests: Record<string, unknown> = {};
-    for (const endpoint of authEndpoints) {
-      const testUrl = `${effectiveBaseUrl}${endpoint}`;
-      try {
-        // Use OPTIONS to test endpoint availability without side effects
-        const response = await fetch(testUrl, {
-          method: 'OPTIONS',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        
-        endpointTests[endpoint] = {
-          url: testUrl,
-          available: response.status !== 404,
-          status: response.status,
-          statusText: response.statusText,
-          corsHeaders: {
-            'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-            'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
-            'access-control-allow-headers': response.headers.get('access-control-allow-headers'),
-          }
-        };
-      } catch (error) {
-        endpointTests[endpoint] = {
-          url: testUrl,
-          available: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-      }
-    }
-    debugInfo.endpoint_tests = endpointTests;
-    
-    // 8. Configuration warnings
+    // 6. Configuration warnings
     const warnings: string[] = [];
     
     if (!envCheck.BETTER_AUTH_SECRET || envCheck.BETTER_AUTH_SECRET === 'NOT_SET') {
@@ -190,47 +161,30 @@ export async function GET() {
       warnings.push('Auth handler not available - authentication routes will not work');
     }
     
-    // Check for URL mismatches in production
-    if (process.env.NODE_ENV === 'production') {
-      const origin = requestHeaders.get('origin');
-      if (origin && !effectiveBaseUrl.includes(origin) && !origin.includes('localhost')) {
-        warnings.push(`Origin mismatch: Request from ${origin} but base URL is ${effectiveBaseUrl}`);
-      }
+    // Check for rate limiting setup
+    if (!envCheck.UPSTASH_REDIS_REST_URL || envCheck.UPSTASH_REDIS_REST_URL === 'NOT_SET') {
+      warnings.push('Upstash Redis not configured - using in-memory rate limiting (not recommended for production)');
     }
     
     debugInfo.warnings = warnings;
     debugInfo.has_critical_issues = warnings.length > 0;
     
-    // Add CORS headers for debugging
-    const response = NextResponse.json(debugInfo, { 
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      }
-    });
-    
-    return response;
+    return createSecureResponse(debugInfo);
     
   } catch (error) {
-    console.error('Debug endpoint error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    console.error('[Debug] Debug endpoint error:', error);
+    return createErrorResponse(
+      'Debug information unavailable',
+      500,
+      error
+    );
   }
 }
 
 // Handle OPTIONS for CORS preflight
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+export async function OPTIONS(_request: NextRequest) {
+  return createSecureResponse(null, 200, {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
 }
