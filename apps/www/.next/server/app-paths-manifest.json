@@ -1,19 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/api/auth/[...all]/route": "app/api/auth/[...all]/route.js",
-  "/api/diagnostics/route": "app/api/diagnostics/route.js",
-  "/auth/page": "app/auth/page.js",
-  "/dashboard/ai-automation/page": "app/dashboard/ai-automation/page.js",
-  "/dashboard/business-intelligence/page": "app/dashboard/business-intelligence/page.js",
-  "/dashboard/compliance/page": "app/dashboard/compliance/page.js",
-  "/dashboard/content-nlp/page": "app/dashboard/content-nlp/page.js",
-  "/dashboard/customer-service/page": "app/dashboard/customer-service/page.js",
-  "/dashboard/finance/page": "app/dashboard/finance/page.js",
-  "/dashboard/integrations/page": "app/dashboard/integrations/page.js",
-  "/dashboard/operations/page": "app/dashboard/operations/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/sales-marketing/page": "app/dashboard/sales-marketing/page.js",
-  "/dashboard/vertical-solutions/page": "app/dashboard/vertical-solutions/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js"
 }

@@ -4039,12 +4039,6 @@
   }
 
   @media (min-width: 48rem) {
-    .md\:items-center {
-      align-items: center;
-    }
-  }
-
-  @media (min-width: 48rem) {
     .md\:justify-start {
       justify-content: flex-start;
     }

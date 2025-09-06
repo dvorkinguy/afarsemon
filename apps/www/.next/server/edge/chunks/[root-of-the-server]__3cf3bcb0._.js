@@ -331,8 +331,8 @@ function getProductionEnvVars() {
     const isProduction = ("TURBOPACK compile-time value", "development") === 'production';
     // Force production URLs when in production environment
     const betterAuthUrl = ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : process.env.BETTER_AUTH_URL || 'http://localhost:3000';
-    const publicBetterAuthUrl = ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : ("TURBOPACK compile-time value", "http://localhost:3002") || 'http://localhost:3000';
-    const publicAppUrl = ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : ("TURBOPACK compile-time value", "http://localhost:3002") || 'http://localhost:3000';
+    const publicBetterAuthUrl = ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : ("TURBOPACK compile-time value", "http://localhost:3000") || 'http://localhost:3000';
+    const publicAppUrl = ("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : ("TURBOPACK compile-time value", "http://localhost:3000") || 'http://localhost:3000';
     return {
         BETTER_AUTH_URL: betterAuthUrl,
         NEXT_PUBLIC_BETTER_AUTH_URL: publicBetterAuthUrl,
@@ -340,8 +340,8 @@ function getProductionEnvVars() {
         isProduction,
         originalVars: {
             BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
-            NEXT_PUBLIC_BETTER_AUTH_URL: ("TURBOPACK compile-time value", "http://localhost:3002"),
-            NEXT_PUBLIC_APP_URL: ("TURBOPACK compile-time value", "http://localhost:3002")
+            NEXT_PUBLIC_BETTER_AUTH_URL: ("TURBOPACK compile-time value", "http://localhost:3000"),
+            NEXT_PUBLIC_APP_URL: ("TURBOPACK compile-time value", "http://localhost:3000")
         }
     };
 }
